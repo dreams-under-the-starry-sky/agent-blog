@@ -1,0 +1,31 @@
+package com.blog.mapper;
+
+import com.blog.common.PageQuery;
+import com.blog.entity.Comment;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
+
+@Mapper
+public interface CommentMapper {
+    List<Comment> selectByArticleId(@Param("articleId") Long articleId);
+
+    List<Comment> selectPage(PageQuery query);
+
+    long countPage(PageQuery query);
+
+    Comment selectById(@Param("id") Long id);
+
+    int insert(Comment comment);
+
+    int updateHandle(@Param("id") Long id, @Param("handle") Integer handle);
+
+    int updateVisible(@Param("id") Long id, @Param("visible") Integer visible);
+
+    int deleteById(@Param("id") Long id);
+
+    long countAll();
+
+    List<Comment> selectRecent(@Param("limit") int limit);
+}

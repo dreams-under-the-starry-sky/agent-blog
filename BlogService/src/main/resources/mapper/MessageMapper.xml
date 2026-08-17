@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.blog.mapper.MessageMapper">
+    <sql id="BaseWhere">
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (m.content LIKE CONCAT('%', #{keyword}, '%') OR m.nickname LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="handle != null">
+                AND m.handle = #{handle}
+            </if>
+            <if test="visible != null">
+                AND m.visible = #{visible}
+            </if>
+            <if test="notice != null">
+                AND m.notice = #{notice}
+            </if>
+            <if test="send != null">
+                AND m.send = #{send}
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectVisible" resultType="com.blog.entity.Message">
+        SELECT id, page_id, parent_id, root_id, content, blogger, parent_nickname, nickname, email, avatar, website,
+               handle, notice, send, visible, browser, system_info, ip, province, city, district, create_time
+        FROM blog_message
+        WHERE visible = 1
+        ORDER BY create_time ASC
+    </select>
+
+    <select id="selectPage" resultType="com.blog.entity.Message">
+        SELECT m.id, m.page_id, m.parent_id, m.root_id, m.content, m.blogger, m.parent_nickname, m.nickname, m.email, m.avatar, m.website,
+               m.handle, m.notice, m.send, m.visible, m.browser, m.system_info, m.ip, m.province, m.city, m.district,
+               m.create_time
+        FROM blog_message m
+        <include refid="BaseWhere"/>
+        ORDER BY m.id DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countPage" resultType="long">
+        SELECT COUNT(1) FROM blog_message m
+        <include refid="BaseWhere"/>
+    </select>
+
+    <select id="selectById" resultType="com.blog.entity.Message">
+        SELECT id, page_id, parent_id, root_id, content, blogger, parent_nickname, nickname, email, avatar, website,
+               handle, notice, send, visible, browser, system_info, ip, province, city, district, create_time
+        FROM blog_message WHERE id = #{id}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO blog_message (id, page_id, parent_id, root_id, content, blogger, parent_nickname, nickname, email, avatar, website,
+                                  handle, notice, send, visible, browser, system_info, ip, province, city, district)
+        VALUES (#{id}, #{pageId}, #{parentId}, #{rootId}, #{content}, #{blogger}, #{parentNickname}, #{nickname}, #{email}, #{avatar}, #{website},
+                #{handle}, #{notice}, #{send}, #{visible}, #{browser}, #{systemInfo}, #{ip}, #{province}, #{city}, #{district})
+    </insert>
+
+    <update id="updateHandle">
+        UPDATE blog_message SET handle = #{handle} WHERE id = #{id}
+    </update>
+
+    <update id="updateVisible">
+        UPDATE blog_message SET visible = #{visible} WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM blog_message WHERE id = #{id}
+    </delete>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(1) FROM blog_message
+    </select>
+</mapper>

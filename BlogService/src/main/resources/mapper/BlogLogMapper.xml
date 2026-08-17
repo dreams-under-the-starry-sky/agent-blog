@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.blog.mapper.BlogLogMapper">
+    <select id="selectPage" resultType="com.blog.entity.BlogLog">
+        SELECT id, event, status, exe_time, detail, create_time
+        FROM blog_log
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (event LIKE CONCAT('%', #{keyword}, '%') OR detail LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countPage" resultType="long">
+        SELECT COUNT(1) FROM blog_log
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (event LIKE CONCAT('%', #{keyword}, '%') OR detail LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO blog_log (event, status, exe_time, detail)
+        VALUES (#{event}, #{status}, #{exeTime}, #{detail})
+    </insert>
+</mapper>

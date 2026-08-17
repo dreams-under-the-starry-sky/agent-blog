@@ -1,0 +1,35 @@
+import { get, post } from './http'
+import type {
+  Article,
+  Category,
+  Comment,
+  Essay,
+  Friend,
+  FriendCategory,
+  Message,
+  Music,
+  PageResult,
+  RecordItem,
+  SidebarData,
+  Tag,
+  WebUpdateLog,
+} from './types'
+
+export const frontApi = {
+  articles: (params: object) => get<PageResult<Article>>('/api/front/articles', params),
+  article: (id: number | string) => get<Article>(`/api/front/articles/${id}`),
+  archive: () => get<Article[]>('/api/front/articles/archive'),
+  categories: () => get<Category[]>('/api/front/categories'),
+  tags: () => get<Tag[]>('/api/front/tags'),
+  sidebar: () => get<SidebarData>('/api/front/sidebar'),
+  comments: (articleId: number | string) => get<Comment[]>('/api/front/comments', { articleId }),
+  submitComment: (data: object) => post<void>('/api/front/comments', data),
+  messages: () => get<Message[]>('/api/front/messages'),
+  submitMessage: (data: object) => post<void>('/api/front/messages', data),
+  essays: (params: object) => get<PageResult<Essay>>('/api/front/essays', params),
+  records: (params: object) => get<PageResult<RecordItem>>('/api/front/records', params),
+  friends: () => get<Friend[]>('/api/front/friends'),
+  friendCategories: () => get<FriendCategory[]>('/api/front/friend-categories'),
+  music: () => get<Music[]>('/api/front/music'),
+  webUpdateLogs: () => get<WebUpdateLog[]>('/api/front/web-update-logs'),
+}

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.blog.mapper.FriendMapper">
+    <select id="selectAll" resultType="com.blog.entity.Friend">
+        SELECT f.id, f.category_id, f.name, f.description, f.logo, f.href, f.cover, f.thumbnail, f.sort,
+               f.create_time, f.update_time, c.name AS category_name
+        FROM blog_friend f
+        LEFT JOIN blog_friend_category c ON c.id = f.category_id
+        ORDER BY f.id DESC
+    </select>
+
+    <select id="selectById" resultType="com.blog.entity.Friend">
+        SELECT f.id, f.category_id, f.name, f.description, f.logo, f.href, f.cover, f.thumbnail, f.sort,
+               f.create_time, f.update_time, c.name AS category_name
+        FROM blog_friend f
+        LEFT JOIN blog_friend_category c ON c.id = f.category_id
+        WHERE f.id = #{id}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO blog_friend (id, category_id, name, description, logo, href, cover, thumbnail, sort)
+        VALUES (#{id}, #{categoryId}, #{name}, #{description}, #{logo}, #{href}, #{cover}, #{thumbnail}, #{sort})
+    </insert>
+
+    <update id="update">
+        UPDATE blog_friend
+        SET category_id = #{categoryId}, name = #{name}, description = #{description}, logo = #{logo}, href = #{href},
+            cover = #{cover}, thumbnail = #{thumbnail}, sort = #{sort}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM blog_friend WHERE id = #{id}
+    </delete>
+
+    <select id="countByCategoryId" resultType="int">
+        SELECT COUNT(1) FROM blog_friend WHERE category_id = #{categoryId}
+    </select>
+</mapper>

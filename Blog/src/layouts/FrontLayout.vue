@@ -1,0 +1,309 @@
+<script setup lang="ts">
+import { computed, nextTick, onMounted, onUnmounted, provide, ref } from 'vue'
+import { onBeforeRouteUpdate, useRoute } from 'vue-router'
+import ArrowUp from '@vicons/tabler/es/ArrowUp'
+import Navbar from '@/components/Navbar.vue'
+import Sidebar from '@/components/Sidebar.vue'
+import ArticleToc from '@/components/ArticleToc.vue'
+import SiteRuntime from '@/components/SiteRuntime.vue'
+import type { Heading } from '@/utils/markdown'
+import { PAGE_READY_KEY } from '@/utils/pageReady'
+import bannerImg from '@/assets/banner.jpg'
+
+const route = useRoute()
+const showTop = ref(false)
+const tocHeadings = ref<Heading[]>([])
+const pageRef = ref<HTMLElement | null>(null)
+const lockHeight = ref<number | null>(null)
+const pageLoading = ref(false)
+let unlockTimer = 0
+let hideTimer = 0
+let loadingSince = 0
+const MIN_LOADING_MS = 240
+
+provide('tocHeadings', tocHeadings)
+
+const listPage = computed(() => ['home', 'category', 'categories', 'tag', 'essays'].includes(String(route.name)))
+const isArticle = computed(() => route.name === 'article')
+
+function onScroll() {
+  showTop.value = window.scrollY > 400
+}
+
+function toTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function finishPageLoad() {
+  pageLoading.value = false
+  lockHeight.value = null
+}
+
+function pageReady() {
+  window.clearTimeout(unlockTimer)
+  window.clearTimeout(hideTimer)
+  const wait = pageLoading.value
+    ? Math.max(0, MIN_LOADING_MS - (Date.now() - loadingSince))
+    : 0
+  hideTimer = window.setTimeout(() => {
+    nextTick(() => {
+      requestAnimationFrame(finishPageLoad)
+    })
+  }, wait)
+}
+
+provide(PAGE_READY_KEY, pageReady)
+
+onBeforeRouteUpdate(() => {
+  const el = pageRef.value
+  if (el) {
+    const height = el.offsetHeight
+    if (height > 0) lockHeight.value = height
+  }
+  tocHeadings.value = []
+  pageLoading.value = true
+  loadingSince = Date.now()
+  window.clearTimeout(hideTimer)
+  window.clearTimeout(unlockTimer)
+  unlockTimer = window.setTimeout(pageReady, 3000)
+})
+
+onMounted(() => {
+  window.addEventListener('scroll', onScroll, { passive: true })
+  onScroll()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', onScroll)
+  window.clearTimeout(unlockTimer)
+  window.clearTimeout(hideTimer)
+})
+</script>
+
+<template>
+  <div class="layout">
+    <div class="bg-box" :style="{ backgroundImage: `url(${bannerImg})` }" />
+
+    <div class="nav-wrap">
+      <Navbar />
+    </div>
+
+    <div class="grid">
+      <aside class="side">
+        <Sidebar />
+      </aside>
+      <main class="main">
+        <div
+          ref="pageRef"
+          class="page"
+          :class="{ 'card-base panel': !listPage }"
+          :style="lockHeight ? { minHeight: `${lockHeight}px` } : undefined"
+        >
+          <div class="page-body" :class="{ wait: pageLoading }">
+            <RouterView />
+          </div>
+          <Transition name="page-loader">
+            <div v-if="pageLoading" class="page-loader" aria-live="polite" aria-busy="true">
+              <div class="page-loader-box">
+                <span class="page-loader-ring" />
+              </div>
+            </div>
+          </Transition>
+        </div>
+        <footer class="footer card-base">
+          <SiteRuntime />
+        </footer>
+      </main>
+    </div>
+
+    <aside v-if="isArticle" class="toc-side">
+      <ArticleToc :headings="tocHeadings" />
+      <button v-show="showTop" class="back-top beside" type="button" title="回到顶部" @click="toTop">
+        <ArrowUp />
+      </button>
+    </aside>
+
+    <button v-show="showTop && !isArticle" class="back-top" type="button" title="回到顶部" @click="toTop">
+      <ArrowUp />
+    </button>
+    <button v-show="showTop && isArticle" class="back-top article-fixed" type="button" title="回到顶部" @click="toTop">
+      <ArrowUp />
+    </button>
+  </div>
+</template>
+
+<style scoped lang="scss">
+.layout {
+  min-height: 100vh;
+  position: relative;
+}
+
+.bg-box {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-color: var(--page-bg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  pointer-events: none;
+}
+
+.nav-wrap,
+.grid,
+.back-top {
+  position: relative;
+  z-index: 1;
+}
+
+.nav-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: transparent;
+}
+
+.grid {
+  width: min(var(--page-width), calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 0.5rem 0 3rem;
+  display: grid;
+  grid-template-columns: 17.5rem minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.side {
+  position: sticky;
+  top: 5rem;
+}
+
+.toc-side {
+  position: fixed;
+  top: 5.5rem;
+  left: calc(50% + min(var(--page-width), calc(100% - 2rem)) / 2 + 0.75rem);
+  width: 17.5rem;
+  height: calc(100vh - 6.5rem);
+  display: flex;
+  flex-direction: column;
+  z-index: 6;
+}
+
+.main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.page { min-width: 0; position: relative; }
+
+.page-body {
+  transition: opacity 0.22s ease;
+}
+
+.page-body.wait {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.page-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.page-loader-box {
+  position: sticky;
+  top: 38vh;
+  margin: 0 auto;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 1rem;
+  background: var(--card-bg);
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-loader-ring {
+  width: 1.35rem;
+  height: 1.35rem;
+  border: 2px solid var(--line-divider);
+  border-top-color: var(--btn-content);
+  border-radius: 50%;
+  animation: page-spin 0.7s linear infinite;
+}
+
+.page-loader-enter-active,
+.page-loader-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.page-loader-enter-from,
+.page-loader-leave-to {
+  opacity: 0;
+}
+
+@keyframes page-spin {
+  to { transform: rotate(360deg); }
+}
+
+.panel { padding: 1.75rem 2rem; }
+
+.footer {
+  display: flex;
+  justify-content: center;
+  padding: 1.1rem 1.25rem;
+}
+
+.back-top {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 2rem;
+  width: 2.6rem;
+  height: 2.6rem;
+  border: none;
+  border-radius: 0.75rem;
+  background: var(--float-panel-bg);
+  color: var(--btn-content);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  :deep(svg) { width: 1.2rem; height: 1.2rem; }
+}
+
+.back-top:hover {
+  background: var(--btn-content);
+  color: #fff;
+}
+
+.back-top.beside {
+  position: static;
+  right: auto;
+  bottom: auto;
+  margin-top: auto;
+  align-self: flex-start;
+  z-index: 6;
+}
+
+.article-fixed { display: none; }
+
+@media (max-width: 114rem) {
+  .toc-side { display: none; }
+  .article-fixed { display: inline-flex; }
+}
+
+@media (max-width: 980px) {
+  .grid { grid-template-columns: 1fr; }
+  .side { position: static; order: 2; }
+  .main { order: 1; }
+  .panel { padding: 1.25rem 1rem; }
+}
+</style>

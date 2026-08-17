@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.blog.mapper.ArticleImgMapper">
+    <select id="selectByArticleId" resultType="com.blog.entity.ArticleImg">
+        SELECT id, article_id, img_url, thumbnail_url FROM blog_article_img WHERE article_id = #{articleId}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO blog_article_img (article_id, img_url, thumbnail_url)
+        VALUES (#{articleId}, #{imgUrl}, #{thumbnailUrl})
+    </insert>
+
+    <delete id="deleteByArticleId">
+        DELETE FROM blog_article_img WHERE article_id = #{articleId}
+    </delete>
+</mapper>

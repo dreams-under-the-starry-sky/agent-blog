@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.blog.mapper.EmailRecordMapper">
+    <select id="selectPage" resultType="com.blog.entity.EmailRecord">
+        SELECT id, article_id, page_id, message_id, send_name, send_email, receive_name, receive_email, content, create_time
+        FROM blog_email
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (content LIKE CONCAT('%', #{keyword}, '%')
+                     OR send_name LIKE CONCAT('%', #{keyword}, '%')
+                     OR receive_name LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countPage" resultType="long">
+        SELECT COUNT(1) FROM blog_email
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (content LIKE CONCAT('%', #{keyword}, '%')
+                     OR send_name LIKE CONCAT('%', #{keyword}, '%')
+                     OR receive_name LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </select>
+</mapper>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.blog.mapper.EssayMapper">
+    <select id="selectPage" resultType="com.blog.entity.Essay">
+        SELECT id, content, status, ip, province, city, district, browser, system_info, create_time, update_time
+        FROM blog_essay
+        <where>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND content LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countPage" resultType="long">
+        SELECT COUNT(1) FROM blog_essay
+        <where>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND content LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="selectById" resultType="com.blog.entity.Essay">
+        SELECT id, content, status, ip, province, city, district, browser, system_info, create_time, update_time
+        FROM blog_essay WHERE id = #{id}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO blog_essay (id, content, status, ip, province, city, district, browser, system_info)
+        VALUES (#{id}, #{content}, #{status}, #{ip}, #{province}, #{city}, #{district}, #{browser}, #{systemInfo})
+    </insert>
+
+    <update id="update">
+        UPDATE blog_essay SET content = #{content}, status = #{status} WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM blog_essay WHERE id = #{id}
+    </delete>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(1) FROM blog_essay
+    </select>
+</mapper>

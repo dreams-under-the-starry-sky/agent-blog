@@ -1,0 +1,43 @@
+@font-face {
+  font-family: "MutterKrause";
+  src: url("@/assets/fonts/MutterKrauseNormal.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  height: 100%;
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--el-bg-color-page, #f2f3f5);
+}
+
+.el-overlay-dialog {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.el-dialog {
+  margin: 0 auto !important;
+}
+
+.el-overlay-message-box {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.el-message-box {
+  margin-top: 0 !important;
+}

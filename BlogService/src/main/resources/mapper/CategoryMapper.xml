@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.blog.mapper.CategoryMapper">
+    <select id="selectAll" resultType="com.blog.entity.Category">
+        SELECT c.id, c.name,
+               (SELECT COUNT(1) FROM blog_article a WHERE a.category_id = c.id AND a.status = 1) AS count,
+               c.create_time, c.update_time
+        FROM blog_category c
+        ORDER BY c.id DESC
+    </select>
+
+    <select id="selectById" resultType="com.blog.entity.Category">
+        SELECT c.id, c.name,
+               (SELECT COUNT(1) FROM blog_article a WHERE a.category_id = c.id AND a.status = 1) AS count,
+               c.create_time, c.update_time
+        FROM blog_category c
+        WHERE c.id = #{id}
+    </select>
+
+    <select id="countByName" resultType="int">
+        SELECT COUNT(1) FROM blog_category
+        WHERE name = #{name}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <insert id="insert">
+        INSERT INTO blog_category (id, name, count) VALUES (#{id}, #{name}, #{count})
+    </insert>
+
+    <update id="update">
+        UPDATE blog_category SET name = #{name} WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM blog_category WHERE id = #{id}
+    </delete>
+
+    <update id="updateCount">
+        UPDATE blog_category SET count = #{count} WHERE id = #{id}
+    </update>
+
+    <update id="syncPublishedCounts">
+        UPDATE blog_category c
+        LEFT JOIN (
+            SELECT category_id, COUNT(1) AS published_count
+            FROM blog_article
+            WHERE status = 1
+            GROUP BY category_id
+        ) a ON a.category_id = c.id
+        SET c.count = IFNULL(a.published_count, 0)
+    </update>
+</mapper>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.blog.mapper.ArticleTagMapper">
+    <select id="selectTagsByArticleId" resultType="com.blog.entity.Tag">
+        SELECT t.id, t.name
+        FROM blog_tag t
+        INNER JOIN blog_article_tag at ON at.tag_id = t.id
+        WHERE at.article_id = #{articleId}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO blog_article_tag (article_id, tag_id) VALUES (#{articleId}, #{tagId})
+    </insert>
+
+    <delete id="deleteByArticleId">
+        DELETE FROM blog_article_tag WHERE article_id = #{articleId}
+    </delete>
+
+    <select id="countByTagId" resultType="int">
+        SELECT COUNT(1) FROM blog_article_tag WHERE tag_id = #{tagId}
+    </select>
+</mapper>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.blog.mapper.CommentMapper">
+    <sql id="BaseWhere">
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (c.content LIKE CONCAT('%', #{keyword}, '%') OR c.nickname LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="handle != null">
+                AND c.handle = #{handle}
+            </if>
+            <if test="visible != null">
+                AND c.visible = #{visible}
+            </if>
+            <if test="notice != null">
+                AND c.notice = #{notice}
+            </if>
+            <if test="send != null">
+                AND c.send = #{send}
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectByArticleId" resultType="com.blog.entity.Comment">
+        SELECT id, article_id, parent_id, root_id, content, blogger, parent_nickname, nickname, email, avatar, website,
+               handle, notice, send, visible, browser, system_info, ip, province, city, district, create_time
+        FROM blog_comment
+        WHERE article_id = #{articleId} AND visible = 1
+        ORDER BY create_time ASC
+    </select>
+
+    <select id="selectPage" resultType="com.blog.entity.Comment">
+        SELECT c.id, c.article_id, c.parent_id, c.root_id, c.content, c.blogger, c.parent_nickname, c.nickname, c.email, c.avatar, c.website,
+               c.handle, c.notice, c.send, c.visible, c.browser, c.system_info, c.ip, c.province, c.city, c.district,
+               c.create_time, a.title AS article_title
+        FROM blog_comment c
+        LEFT JOIN blog_article a ON a.id = c.article_id
+        <include refid="BaseWhere"/>
+        ORDER BY c.id DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countPage" resultType="long">
+        SELECT COUNT(1) FROM blog_comment c
+        <include refid="BaseWhere"/>
+    </select>
+
+    <select id="selectById" resultType="com.blog.entity.Comment">
+        SELECT id, article_id, parent_id, root_id, content, blogger, parent_nickname, nickname, email, avatar, website,
+               handle, notice, send, visible, browser, system_info, ip, province, city, district, create_time
+        FROM blog_comment WHERE id = #{id}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO blog_comment (id, article_id, parent_id, root_id, content, blogger, parent_nickname, nickname, email, avatar, website,
+                                  handle, notice, send, visible, browser, system_info, ip, province, city, district)
+        VALUES (#{id}, #{articleId}, #{parentId}, #{rootId}, #{content}, #{blogger}, #{parentNickname}, #{nickname}, #{email}, #{avatar}, #{website},
+                #{handle}, #{notice}, #{send}, #{visible}, #{browser}, #{systemInfo}, #{ip}, #{province}, #{city}, #{district})
+    </insert>
+
+    <update id="updateHandle">
+        UPDATE blog_comment SET handle = #{handle} WHERE id = #{id}
+    </update>
+
+    <update id="updateVisible">
+        UPDATE blog_comment SET visible = #{visible} WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM blog_comment WHERE id = #{id}
+    </delete>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(1) FROM blog_comment
+    </select>
+
+    <select id="selectRecent" resultType="com.blog.entity.Comment">
+        SELECT c.id, c.article_id, c.content, c.nickname, c.create_time, a.title AS article_title
+        FROM blog_comment c
+        LEFT JOIN blog_article a ON a.id = c.article_id
+        ORDER BY c.create_time DESC
+        LIMIT #{limit}
+    </select>
+</mapper>

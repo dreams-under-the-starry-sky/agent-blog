@@ -1,0 +1,59 @@
+:root {
+  --hue: 250;
+  --radius-large: 1rem;
+  --page-width: 75rem;
+  --primary: oklch(0.70 0.14 var(--hue));
+  --page-bg: oklch(0.95 0.01 var(--hue));
+  --card-bg: #ffffff;
+  --btn-content: oklch(0.55 0.12 var(--hue));
+  --btn-regular-bg: oklch(0.95 0.025 var(--hue));
+  --btn-plain-bg-hover: oklch(0.95 0.025 var(--hue));
+  --deep-text: #2b2b2b;
+  --line-divider: rgba(0, 0, 0, 0.08);
+  --float-panel-bg: #ffffff;
+  --color-selection-bar: linear-gradient(
+    to right,
+    oklch(0.80 0.10 0), oklch(0.80 0.10 60), oklch(0.80 0.10 120),
+    oklch(0.80 0.10 180), oklch(0.80 0.10 240), oklch(0.80 0.10 300), oklch(0.80 0.10 360)
+  );
+  --c-text-1: #2b2b2b;
+  --c-text-2: #5a5a5a;
+  --c-text-3: #8a8a8a;
+  --muted: var(--c-text-2);
+  --text: var(--c-text-1);
+  --border: var(--line-divider);
+  --el-text-color-primary: var(--c-text-1);
+  --el-text-color-regular: var(--c-text-1);
+  --el-text-color-secondary: var(--c-text-2);
+  --el-text-color-placeholder: var(--c-text-3);
+  --el-text-color-disabled: var(--c-text-3);
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --font-sans: '华文楷体', STKaiti, STKaiTi, KaiTi, 'Kaiti SC', serif;
+  --el-font-family: var(--font-sans);
+}
+
+html.dark {
+  --primary: oklch(0.75 0.14 var(--hue));
+  --page-bg: oklch(0.16 0.014 var(--hue));
+  --card-bg: oklch(0.23 0.015 var(--hue));
+  --btn-content: oklch(0.75 0.1 var(--hue));
+  --btn-regular-bg: oklch(0.33 0.035 var(--hue));
+  --btn-plain-bg-hover: oklch(0.30 0.035 var(--hue));
+  --deep-text: #f4f4f4;
+  --line-divider: rgba(255, 255, 255, 0.08);
+  --float-panel-bg: oklch(0.19 0.015 var(--hue));
+  --color-selection-bar: linear-gradient(
+    to right,
+    oklch(0.70 0.10 0), oklch(0.70 0.10 60), oklch(0.70 0.10 120),
+    oklch(0.70 0.10 180), oklch(0.70 0.10 240), oklch(0.70 0.10 300), oklch(0.70 0.10 360)
+  );
+  --c-text-1: #f4f4f4;
+  --c-text-2: #d0d0d0;
+  --c-text-3: #b0b0b0;
+  --el-text-color-primary: var(--c-text-1);
+  --el-text-color-regular: var(--c-text-1);
+  --el-text-color-secondary: var(--c-text-2);
+  --el-text-color-placeholder: var(--c-text-3);
+  --el-text-color-disabled: var(--c-text-3);
+  --shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+}
