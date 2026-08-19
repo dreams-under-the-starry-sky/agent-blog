@@ -1,5 +1,6 @@
 package com.blog.dto;
 
+import com.blog.validation.RequiredText;
 import lombok.Data;
 
 import java.util.List;
@@ -8,6 +9,7 @@ import java.util.List;
 public class ArticleSaveRequest {
     private Long id;
     private Long categoryId;
+    @RequiredText(message = "标题不能为空")
     private String title;
     private String description;
     private String cover;

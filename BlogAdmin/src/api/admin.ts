@@ -10,7 +10,17 @@ export const authApi = {
 }
 
 export const adminApi = {
-  dashboard: () => get<Record<string, unknown>>('/api/admin/dashboard'),
+  dashboard: () =>
+    get<{
+      articleCount: number
+      friendCount: number
+      messageCount: number
+      commentCount: number
+      blackCount: number
+      errorLogCount: number
+      hotArticles: any[]
+      recentBlacks: any[]
+    }>('/api/admin/dashboard'),
   articles: (params: object) => get<{ total: number; list: any[] }>('/api/admin/articles', params),
   article: (id: number | string) => get<any>(`/api/admin/articles/${id}`),
   saveArticle: (data: any) =>

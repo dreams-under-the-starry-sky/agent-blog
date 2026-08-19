@@ -12,5 +12,7 @@ public interface BlogLogMapper {
 
     long countPage(PageQuery query);
 
+    long countFailed();
+
     int insert(BlogLog log);
 }

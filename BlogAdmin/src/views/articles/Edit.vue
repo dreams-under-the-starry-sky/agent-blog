@@ -38,7 +38,7 @@ async function onUploadImg(files: File[], callback: (urls: string[], names?: str
   const names: string[] = []
   for (const file of files) {
     const res = await upload(file)
-    urls.push(res.url)
+    urls.push(res.thumbnailUrl || res.url)
     names.push(file.name)
     contentImages.value.push({ imgUrl: res.url, thumbnailUrl: res.thumbnailUrl || res.url })
   }

@@ -44,7 +44,7 @@ defineProps<{ article: Article }>()
 }
 h2 {
   margin: 0 0 0.6rem;
-  font-size: 1.35rem;
+  font-size: calc(1.35rem + 2px);
   font-weight: 700;
   line-height: 1.35;
   color: var(--c-text-1);
@@ -55,7 +55,7 @@ h2 {
   gap: 0.5rem;
   align-items: center;
   color: var(--c-text-2);
-  font-size: 0.85rem;
+  font-size: calc(0.85rem + 2px);
 }
 time,
 .cat {
@@ -66,7 +66,7 @@ time,
 .excerpt {
   margin: 0.7rem 0 0;
   color: var(--c-text-2);
-  font-size: 0.9rem;
+  font-size: calc(0.9rem + 2px);
   line-height: 1.7;
   display: -webkit-box;
   -webkit-line-clamp: 2;

@@ -78,7 +78,7 @@ onUnmounted(() => {
   overflow: hidden;
   border-radius: 0.28rem;
   color: #fff;
-  font-size: 0.85rem;
+  font-size: calc(0.85rem + 2px);
   font-weight: 400;
   line-height: 1;
   letter-spacing: 0.02em;

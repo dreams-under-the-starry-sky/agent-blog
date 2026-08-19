@@ -1,6 +1,7 @@
 server:
   port: 8080
   servlet:
+    context-path: /agent-blog/server
     encoding:
       charset: UTF-8
       enabled: true
@@ -8,7 +9,7 @@ server:
 
 spring:
   application:
-    name: blog-service
+    name: agent-blog
   config:
     import: optional:classpath:application-local.yml
   jackson:
@@ -37,9 +38,25 @@ blog:
   jwt:
     secret: ${BLOG_JWT_SECRET:}
     expire-hours: 24
+  storage:
+    # local | cos | qiniu
+    type: ${BLOG_STORAGE_TYPE:cos}
+    prefix: agent-blog
   upload:
     dir: uploads
     url-prefix: /uploads
+  cos:
+    secret-id: ${BLOG_COS_SECRET_ID:}
+    secret-key: ${BLOG_COS_SECRET_KEY:}
+    bucket: ${BLOG_COS_BUCKET:}
+    region: ${BLOG_COS_REGION:}
+    cdn-domain: ${BLOG_COS_CDN_DOMAIN:}
+  qiniu:
+    access-key: ${BLOG_QINIU_ACCESS_KEY:}
+    secret-key: ${BLOG_QINIU_SECRET_KEY:}
+    bucket: ${BLOG_QINIU_BUCKET:}
+    region: ${BLOG_QINIU_REGION:auto}
+    cdn-domain: ${BLOG_QINIU_CDN_DOMAIN:}
   cors:
     origins: http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174
   # 首次启动会把 admin 密码重置为下面的明文，便于本地登录；真实值放 application-local.yml

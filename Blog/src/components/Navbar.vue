@@ -8,7 +8,7 @@ import Moon from '@vicons/tabler/es/Moon'
 import Settings from '@vicons/tabler/es/Settings'
 import Sun from '@vicons/tabler/es/Sun'
 import { siteConfig } from '@/config'
-import { PRESET_HUES, useThemeStore } from '@/stores/theme'
+import { PRESET_COLORS, useThemeStore } from '@/stores/theme'
 
 const theme = useThemeStore()
 const route = useRoute()
@@ -119,14 +119,13 @@ onUnmounted(() => document.removeEventListener('pointerdown', onDocClick))
           <p class="hue-row">主题色</p>
           <div class="presets">
             <button
-              v-for="value in PRESET_HUES"
+              v-for="value in PRESET_COLORS"
               :key="value"
               type="button"
               class="swatch"
-              :class="{ on: Math.round(theme.hue) === value }"
-              :style="{ background: `oklch(0.70 0.14 ${value})` }"
-              :title="String(value)"
-              @click="theme.setHue(value)"
+              :class="{ on: theme.sameColor(theme.color, value) }"
+              :style="{ background: value }"
+              @click="theme.setColor(value)"
             />
           </div>
           <input
@@ -173,6 +172,7 @@ onUnmounted(() => document.removeEventListener('pointerdown', onDocClick))
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   column-gap: 1rem;
+  font-size: 16px;
   background: var(--card-bg);
   box-shadow: var(--shadow);
   border-radius: 0 0 var(--radius-large) var(--radius-large);
@@ -346,6 +346,7 @@ onUnmounted(() => document.removeEventListener('pointerdown', onDocClick))
   margin: 0 auto 0.75rem;
   padding: 0.5rem;
   flex-direction: column;
+  font-size: 16px;
 }
 
 .mobile-panel .item {

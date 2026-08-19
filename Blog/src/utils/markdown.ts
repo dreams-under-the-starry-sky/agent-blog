@@ -27,17 +27,29 @@ export function renderMarkdown(source?: string) {
   return marked.parse(source || '', { async: false }) as string
 }
 
-export function renderArticle(source?: string) {
+function withThumbnails(source?: string, images?: { imgUrl?: string; thumbnailUrl?: string }[]) {
+  if (!source || !images?.length) return source || ''
+  let out = source
+  for (const img of images) {
+    if (img.imgUrl && img.thumbnailUrl && img.imgUrl !== img.thumbnailUrl) {
+      out = out.split(img.imgUrl).join(img.thumbnailUrl)
+    }
+  }
+  return out
+}
+
+export function renderArticle(source?: string, images?: { imgUrl?: string; thumbnailUrl?: string }[]) {
   const headings: Heading[] = []
   const used = new Map<string, number>()
-  let html = renderMarkdown(source).replace(/<h([1-4])>([\s\S]*?)<\/h\1>/gi, (_, level, inner) => {
+  let html = renderMarkdown(withThumbnails(source, images)).replace(/<h([1-4])([^>]*)>([\s\S]*?)<\/h\1>/gi, (_, level, attrs, inner) => {
     const plain = String(inner).replace(/<[^>]*>/g, '').trim()
     const depth = Number(level)
     const id = slugify(plain, used)
     if (depth >= 2) {
       headings.push({ id, text: plain, level: depth })
     }
-    return `<h${level} id="${id}">${inner}</h${level}>`
+    const cleanAttrs = String(attrs).replace(/\s+id=(["']).*?\1/i, '')
+    return `<h${level}${cleanAttrs} id="${id}">${inner}</h${level}>`
   })
   return { html, headings }
 }

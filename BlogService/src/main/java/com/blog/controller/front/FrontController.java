@@ -1,8 +1,9 @@
 package com.blog.controller.front;
 
+import com.blog.common.BizException;
+import com.blog.common.ErrorCode;
 import com.blog.common.PageQuery;
 import com.blog.common.PageResult;
-import com.blog.common.Result;
 import com.blog.dto.CommentSubmitRequest;
 import com.blog.dto.MessageSubmitRequest;
 import com.blog.entity.Article;
@@ -25,9 +26,12 @@ import com.blog.service.MetaService;
 import com.blog.service.MiscService;
 import com.blog.service.RecordService;
 import com.blog.service.WebUpdateLogService;
+import com.blog.validation.FrontVisitor;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
+import jakarta.validation.groups.Default;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -60,100 +64,100 @@ public class FrontController {
     private WebUpdateLogService webUpdateLogService;
 
     @GetMapping("/articles")
-    public Result<PageResult<Article>> articles(PageQuery query) {
+    public ResponseEntity<PageResult<Article>> articles(PageQuery query) {
         query.setStatus(1);
-        return Result.ok(articleService.page(query));
+        return ResponseEntity.ok(articleService.page(query));
     }
 
     @GetMapping("/articles/{id}")
-    public Result<Article> article(@PathVariable Long id) {
+    public ResponseEntity<Article> article(@PathVariable Long id) {
         Article article = articleService.detail(id, true);
         if (!Integer.valueOf(1).equals(article.getStatus())) {
-            return Result.fail("文章不存在");
+            throw new BizException(ErrorCode.ARTICLE_NOT_FOUND);
         }
-        return Result.ok(article);
+        return ResponseEntity.ok(article);
     }
 
     @GetMapping("/articles/archive")
-    public Result<List<Article>> archive() {
-        return Result.ok(articleService.archive());
+    public ResponseEntity<List<Article>> archive() {
+        return ResponseEntity.ok(articleService.archive());
     }
 
     @GetMapping("/categories")
-    public Result<List<Category>> categories() {
-        return Result.ok(metaService.categories());
+    public ResponseEntity<List<Category>> categories() {
+        return ResponseEntity.ok(metaService.categories());
     }
 
     @GetMapping("/tags")
-    public Result<List<Tag>> tags() {
-        return Result.ok(metaService.tags());
+    public ResponseEntity<List<Tag>> tags() {
+        return ResponseEntity.ok(metaService.tags());
     }
 
     @GetMapping("/sidebar")
-    public Result<Map<String, Object>> sidebar() {
+    public ResponseEntity<Map<String, Object>> sidebar() {
         Map<String, Object> data = new HashMap<>();
         data.put("hotArticles", articleService.hot(5));
         data.put("categories", metaService.categories());
         data.put("tags", metaService.tags());
-        return Result.ok(data);
+        return ResponseEntity.ok(data);
     }
 
     @GetMapping("/comments")
-    public Result<List<Comment>> comments(Long articleId) {
-        return Result.ok(commentService.treeByArticle(articleId));
+    public ResponseEntity<List<Comment>> comments(Long articleId) {
+        return ResponseEntity.ok(commentService.treeByArticle(articleId));
     }
 
     @PostMapping("/comments")
-    public Result<Void> submitComment(@Valid @RequestBody CommentSubmitRequest req, HttpServletRequest request) {
+    public ResponseEntity<Void> submitComment(@Validated({Default.class, FrontVisitor.class}) @RequestBody CommentSubmitRequest req, HttpServletRequest request) {
         commentService.submit(req, request, false);
-        return Result.ok();
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/messages")
-    public Result<List<Message>> messages() {
-        return Result.ok(messageService.treeVisible());
+    public ResponseEntity<PageResult<Message>> messages(Integer pageId, PageQuery query) {
+        return ResponseEntity.ok(messageService.treeVisiblePage(pageId, query));
     }
 
     @PostMapping("/messages")
-    public Result<Void> submitMessage(@Valid @RequestBody MessageSubmitRequest req, HttpServletRequest request) {
+    public ResponseEntity<Void> submitMessage(@Validated({Default.class, FrontVisitor.class}) @RequestBody MessageSubmitRequest req, HttpServletRequest request) {
         messageService.submit(req, request, false);
-        return Result.ok();
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/essays")
-    public Result<PageResult<Essay>> essays(PageQuery query) {
+    public ResponseEntity<PageResult<Essay>> essays(PageQuery query) {
         query.setStatus(1);
-        return Result.ok(essayService.page(query));
+        return ResponseEntity.ok(essayService.page(query));
     }
 
     @GetMapping("/records")
-    public Result<PageResult<Record>> records(PageQuery query) {
+    public ResponseEntity<PageResult<Record>> records(PageQuery query) {
         query.setStatus(1);
-        return Result.ok(recordService.page(query));
+        return ResponseEntity.ok(recordService.page(query));
     }
 
     @GetMapping("/record-categories")
-    public Result<List<RecordCategory>> recordCategories() {
-        return Result.ok(recordService.categories());
+    public ResponseEntity<List<RecordCategory>> recordCategories() {
+        return ResponseEntity.ok(recordService.categories());
     }
 
     @GetMapping("/friends")
-    public Result<List<Friend>> friends() {
-        return Result.ok(miscService.friends());
+    public ResponseEntity<List<Friend>> friends() {
+        return ResponseEntity.ok(miscService.friends());
     }
 
     @GetMapping("/friend-categories")
-    public Result<List<FriendCategory>> friendCategories() {
-        return Result.ok(miscService.friendCategories());
+    public ResponseEntity<List<FriendCategory>> friendCategories() {
+        return ResponseEntity.ok(miscService.friendCategories());
     }
 
     @GetMapping("/music")
-    public Result<List<Music>> music() {
-        return Result.ok(miscService.musicList());
+    public ResponseEntity<List<Music>> music() {
+        return ResponseEntity.ok(miscService.musicList());
     }
 
     @GetMapping("/web-update-logs")
-    public Result<List<WebUpdateLog>> webUpdateLogs() {
-        return Result.ok(webUpdateLogService.list());
+    public ResponseEntity<List<WebUpdateLog>> webUpdateLogs() {
+        return ResponseEntity.ok(webUpdateLogService.list());
     }
 }

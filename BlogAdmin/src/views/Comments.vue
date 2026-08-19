@@ -122,7 +122,7 @@ onMounted(load)
     </el-table-column>
     <el-table-column label="操作">
       <template #default="{ row }">
-        <el-button link type="primary" @click="openDetail(row)">{{ row.handle === 1 ? '查看' : '回复' }}</el-button>
+        <el-button link type="primary" @click="openDetail(row)">{{ row.handle === 1 || row.visible === 0 ? '查看' : '回复' }}</el-button>
         <el-button link :type="row.visible === 1 ? 'danger' : 'primary'" @click="toggleVisible(row)">
           {{ row.visible === 1 ? '删除' : '恢复' }}
         </el-button>
@@ -140,6 +140,6 @@ onMounted(load)
   font-size: 14px;
 }
 .filter-select {
-  width: 140px;
+  width: 220px;
 }
 </style>

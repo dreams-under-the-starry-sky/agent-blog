@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,7 @@ import java.time.Duration;
 
 @Service
 public class IpLocationService {
+    private static final Logger log = LoggerFactory.getLogger(IpLocationService.class);
     public record Location(String province, String city, String district) {
         static Location empty() {
             return new Location(null, null, null);
@@ -27,6 +30,8 @@ public class IpLocationService {
 
     @Resource
     private ObjectMapper objectMapper;
+    @Resource
+    private LogService logService;
 
     private RestClient restClient;
 
@@ -56,6 +61,8 @@ public class IpLocationService {
             }
             JsonNode root = objectMapper.readTree(json);
             if (root.path("status").asInt(-1) != 0) {
+                logService.recordFail("查询地理位置", "status=" + root.path("status").asInt()
+                        + " message=" + root.path("message").asText(""));
                 return Location.empty();
             }
             JsonNode info = root.path("result").path("ad_info");
@@ -64,7 +71,9 @@ public class IpLocationService {
                     text(info, "city"),
                     text(info, "district")
             );
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            log.warn("查询地理位置失败", e);
+            logService.recordFail("查询地理位置", "ip=" + queryIp, e);
             return Location.empty();
         }
     }
@@ -105,6 +114,7 @@ public class IpLocationService {
             int second = Integer.parseInt(parts[1]);
             return second >= 16 && second <= 31;
         } catch (NumberFormatException e) {
+            log.warn("解析 IP 失败");
             return false;
         }
     }

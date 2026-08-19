@@ -36,4 +36,8 @@
     <select id="countByCategoryId" resultType="int">
         SELECT COUNT(1) FROM blog_friend WHERE category_id = #{categoryId}
     </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(1) FROM blog_friend
+    </select>
 </mapper>

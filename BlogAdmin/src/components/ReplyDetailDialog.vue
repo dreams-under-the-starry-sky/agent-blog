@@ -35,9 +35,8 @@ function region(row: any) {
       <el-descriptions-item label="昵称">{{ row.nickname || '—' }}</el-descriptions-item>
       <el-descriptions-item label="邮箱">{{ row.email || '—' }}</el-descriptions-item>
       <el-descriptions-item v-if="kind === 'comment'" label="文章">{{ row.articleTitle || '—' }}</el-descriptions-item>
-      <el-descriptions-item label="回复对象">{{ row.parentNickname || '—' }}</el-descriptions-item>
-      <el-descriptions-item label="网站" :span="kind === 'comment' ? 1 : 2">{{ row.website || '—' }}</el-descriptions-item>
-      <el-descriptions-item label="内容" :span="2">{{ row.content || '—' }}</el-descriptions-item>
+      <el-descriptions-item label="回复对象" :span="kind === 'comment' ? 1 : 2">{{ row.parentNickname || '—' }}</el-descriptions-item>
+      <el-descriptions-item label="时间" :span="2">{{ formatTime(row.createTime) || '—' }}</el-descriptions-item>
       <el-descriptions-item label="IP">{{ row.ip || '—' }}</el-descriptions-item>
       <el-descriptions-item label="地区">{{ region(row) }}</el-descriptions-item>
       <el-descriptions-item label="浏览器">{{ row.browser || '—' }}</el-descriptions-item>
@@ -46,7 +45,9 @@ function region(row: any) {
       <el-descriptions-item label="是否删除">{{ row.visible === 0 ? '是' : '否' }}</el-descriptions-item>
       <el-descriptions-item label="发送邮件">{{ yesNo(row.notice) }}</el-descriptions-item>
       <el-descriptions-item label="邮件是否发送">{{ yesNo(row.send) }}</el-descriptions-item>
-      <el-descriptions-item label="时间" :span="2">{{ formatTime(row.createTime) || '—' }}</el-descriptions-item>
+      <el-descriptions-item label="内容" :span="2">
+        <span class="content">{{ row.content || '—' }}</span>
+      </el-descriptions-item>
     </el-descriptions>
     <div v-if="!hidden" class="reply-box">
       <p class="label">回复内容</p>
@@ -67,5 +68,17 @@ function region(row: any) {
   margin: 0 0 8px;
   font-size: 14px;
   color: var(--el-text-color-regular);
+}
+:deep(.el-descriptions__table) {
+  table-layout: fixed;
+}
+:deep(.el-descriptions__label),
+:deep(.el-descriptions__cell.is-bordered-label) {
+  width: 120px;
+  min-width: 120px;
+}
+.content {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 </style>

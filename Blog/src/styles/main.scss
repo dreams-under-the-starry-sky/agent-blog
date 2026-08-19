@@ -16,7 +16,12 @@ html, body, #app {
   font-family: var(--font-sans);
 }
 
+html {
+  font-size: 16px;
+}
+
 body {
+  font-size: 18px;
   color: var(--c-text-1);
   background: var(--page-bg);
 }
@@ -33,7 +38,7 @@ button, input, textarea { font-family: inherit; }
 
 .page-title {
   margin: 0 0 1.25rem;
-  font-size: 1.75rem;
+  font-size: calc(1.75rem + 2px);
   font-weight: 700;
   color: var(--c-text-1);
 }
@@ -49,6 +54,11 @@ button, input, textarea { font-family: inherit; }
 .pager {
   margin-top: 1.5rem;
   justify-content: center;
+}
+
+.pager.el-pagination.is-background .el-pager li.is-active {
+  background-color: var(--primary) !important;
+  color: #fff !important;
 }
 
 .markdown-body {
@@ -130,7 +140,7 @@ button, input, textarea { font-family: inherit; }
 html.dark .el-empty__description,
 html.dark .el-pagination.is-background .btn-next,
 html.dark .el-pagination.is-background .btn-prev,
-html.dark .el-pagination.is-background .el-pager li,
+html.dark .el-pagination.is-background .el-pager li:not(.is-active),
 html.dark .el-input__inner,
 html.dark .el-textarea__inner,
 html.dark .el-alert__title {

@@ -1,22 +1,26 @@
 package com.blog.dto;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import com.blog.validation.FrontVisitor;
+import com.blog.validation.RequiredText;
 import lombok.Data;
 
 @Data
 public class MessageSubmitRequest {
     private Integer pageId;
     private Long parentId;
-    @NotBlank(message = "请填写内容")
-    @Size(max = 255, message = "消息内容不能超过255个字符")
+    @RequiredText(message = "请填写内容", max = 255, tooLongMessage = "消息内容不能超过255个字符")
     private String content;
-    @NotBlank(message = "请填写昵称")
-    @Size(max = 20, message = "昵称不能超过20个字符")
+    @RequiredText(message = "请填写昵称", max = 20, tooLongMessage = "昵称不能超过20个字符")
     private String nickname;
-    @Email(message = "请填写正确的邮箱格式")
-    @Size(max = 30, message = "邮箱不能超过30个字符")
+    @RequiredText(
+            message = "请填写邮箱",
+            max = 30,
+            tooLongMessage = "邮箱不能超过30个字符",
+            pattern = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
+            patternMessage = "请填写正确的邮箱格式",
+            forbidden = "1762546812@qq.com",
+            forbiddenMessage = "不能输入博主的邮箱",
+            groups = FrontVisitor.class)
     private String email;
     private String website;
     private Integer notice;

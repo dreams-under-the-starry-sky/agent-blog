@@ -2,9 +2,51 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 const DARK_KEY = 'blog_front_dark'
-const HUE_KEY = 'blog_front_hue'
-export const DEFAULT_HUE = 250
-export const PRESET_HUES = [0, 30, 60, 120, 160, 200, 250, 280, 320, 345]
+const COLOR_KEY = 'blog_front_color'
+
+export const PRESET_COLORS = [
+  '#ff4500',
+  '#ff8c00',
+  '#ffd700',
+  '#90ee90',
+  '#00ced1',
+  '#1e90ff',
+  '#a71585',
+  '#00d463',
+  '#c06070',
+  '#c81545',
+]
+
+export const DEFAULT_COLOR = '#1e90ff'
+
+function parseHex(hex: string) {
+  let h = hex.replace('#', '').trim()
+  if (h.length === 3 || h.length === 4) {
+    h = [...h].map((c) => c + c).join('')
+  }
+  const r = Number.parseInt(h.slice(0, 2), 16) || 0
+  const g = Number.parseInt(h.slice(2, 4), 16) || 0
+  const b = Number.parseInt(h.slice(4, 6), 16) || 0
+  const solid = `#${h.slice(0, 6).toLowerCase()}`
+  return { r, g, b, solid }
+}
+
+function rgbToHue(r: number, g: number, b: number) {
+  r /= 255
+  g /= 255
+  b /= 255
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const d = max - min
+  if (d === 0) return 0
+  let h = 0
+  if (max === r) h = ((g - b) / d) % 6
+  else if (max === g) h = (b - r) / d + 2
+  else h = (r - g) / d + 4
+  h *= 60
+  if (h < 0) h += 360
+  return Math.round(h)
+}
 
 function hslToHex(h: number, s: number, l: number) {
   const a = s * Math.min(l, 1 - l)
@@ -17,10 +59,8 @@ function hslToHex(h: number, s: number, l: number) {
 }
 
 function mix(hex: string, target: string, weight: number) {
-  const n = Number.parseInt(hex.replace('#', ''), 16)
-  const t = Number.parseInt(target.replace('#', ''), 16)
-  const a = { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 }
-  const b = { r: (t >> 16) & 255, g: (t >> 8) & 255, b: t & 255 }
+  const a = parseHex(hex)
+  const b = parseHex(target)
   const w = weight / 100
   const r = Math.round(a.r * (1 - w) + b.r * w)
   const g = Math.round(a.g * (1 - w) + b.g * w)
@@ -28,22 +68,29 @@ function mix(hex: string, target: string, weight: number) {
   return `#${[r, g, bl].map((v) => v.toString(16).padStart(2, '0')).join('')}`
 }
 
+function sameColor(a: string, b: string) {
+  return a.replace('#', '').toLowerCase() === b.replace('#', '').toLowerCase()
+}
+
 export const useThemeStore = defineStore('theme', () => {
   const dark = ref(localStorage.getItem(DARK_KEY) === '1')
-  const hue = ref(Number(localStorage.getItem(HUE_KEY) || DEFAULT_HUE))
+  const color = ref(localStorage.getItem(COLOR_KEY) || DEFAULT_COLOR)
+  const hue = ref(0)
 
   function apply() {
     const root = document.documentElement
-    const primary = hslToHex(hue.value, 0.58, 0.58)
+    const parsed = parseHex(color.value)
+    hue.value = rgbToHue(parsed.r, parsed.g, parsed.b)
     root.classList.toggle('dark', dark.value)
     root.style.setProperty('--hue', String(hue.value))
-    root.style.setProperty('--el-color-primary', primary)
-    const n = Number.parseInt(primary.replace('#', ''), 16)
-    root.style.setProperty('--el-color-primary-rgb', `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`)
+    root.style.setProperty('--primary', color.value)
+    root.style.setProperty('--btn-content', parsed.solid)
+    root.style.setProperty('--el-color-primary', parsed.solid)
+    root.style.setProperty('--el-color-primary-rgb', `${parsed.r}, ${parsed.g}, ${parsed.b}`)
     ;[3, 5, 7, 8, 9].forEach((step) => {
-      root.style.setProperty(`--el-color-primary-light-${step}`, mix(primary, '#ffffff', step * 10))
+      root.style.setProperty(`--el-color-primary-light-${step}`, mix(parsed.solid, '#ffffff', step * 10))
     })
-    root.style.setProperty('--el-color-primary-dark-2', mix(primary, '#000000', 20))
+    root.style.setProperty('--el-color-primary-dark-2', mix(parsed.solid, '#000000', 20))
   }
 
   function setDark(value: boolean) {
@@ -52,10 +99,14 @@ export const useThemeStore = defineStore('theme', () => {
     apply()
   }
 
-  function setHue(value: number) {
-    hue.value = value
-    localStorage.setItem(HUE_KEY, String(value))
+  function setColor(value: string) {
+    color.value = value
+    localStorage.setItem(COLOR_KEY, value)
     apply()
+  }
+
+  function setHue(value: number) {
+    setColor(hslToHex(value, 0.58, 0.58))
   }
 
   function toggle() {
@@ -63,5 +114,5 @@ export const useThemeStore = defineStore('theme', () => {
   }
 
   apply()
-  return { dark, hue, apply, setDark, setHue, toggle }
+  return { dark, color, hue, apply, setDark, setColor, setHue, toggle, sameColor }
 })

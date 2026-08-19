@@ -54,7 +54,8 @@ function pageReady() {
 
 provide(PAGE_READY_KEY, pageReady)
 
-onBeforeRouteUpdate(() => {
+onBeforeRouteUpdate((to, from) => {
+  if (to.path === from.path) return
   const el = pageRef.value
   if (el) {
     const height = el.offsetHeight
@@ -302,8 +303,7 @@ onUnmounted(() => {
 
 @media (max-width: 980px) {
   .grid { grid-template-columns: 1fr; }
-  .side { position: static; order: 2; }
-  .main { order: 1; }
+  .side { position: static; }
   .panel { padding: 1.25rem 1rem; }
 }
 </style>

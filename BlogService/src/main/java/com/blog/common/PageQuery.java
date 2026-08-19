@@ -15,6 +15,7 @@ public class PageQuery {
     private Integer visible;
     private Integer notice;
     private Integer send;
+    private String logStatus;
 
     public int getOffset() {
         int p = page == null || page < 1 ? 1 : page;

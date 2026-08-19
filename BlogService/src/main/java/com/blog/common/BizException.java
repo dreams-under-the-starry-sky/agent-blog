@@ -4,15 +4,15 @@ import lombok.Getter;
 
 @Getter
 public class BizException extends RuntimeException {
-    private final int code;
+    private final ErrorCode errorCode;
 
-    public BizException(String message) {
-        super(message);
-        this.code = 1;
+    public BizException(ErrorCode errorCode) {
+        super(errorCode.getMessage());
+        this.errorCode = errorCode;
     }
 
-    public BizException(int code, String message) {
-        super(message);
-        this.code = code;
+    public BizException(ErrorCode errorCode, Throwable cause) {
+        super(errorCode.getMessage(), cause);
+        this.errorCode = errorCode;
     }
 }

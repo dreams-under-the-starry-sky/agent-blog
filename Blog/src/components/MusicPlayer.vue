@@ -262,13 +262,13 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
 }
 .title {
-  font-size: 1rem;
+  font-size: calc(1rem + 2px);
   font-weight: 700;
   color: var(--c-text-1);
 }
 .sub {
   margin-top: 0.12rem;
-  font-size: 0.75rem;
+  font-size: calc(0.75rem + 2px);
   color: var(--c-text-3);
   min-height: 1em;
 }
@@ -281,7 +281,7 @@ onBeforeUnmount(() => {
 }
 .clock {
   flex-shrink: 0;
-  font-size: 0.75rem;
+  font-size: calc(0.75rem + 2px);
   color: var(--c-text-3);
 }
 .vol {
@@ -387,7 +387,7 @@ onBeforeUnmount(() => {
   gap: 0.45rem;
   padding: 0.35rem 0.15rem;
   border-top: 1px solid var(--line-divider);
-  font-size: 0.78rem;
+  font-size: calc(0.78rem + 2px);
   color: var(--c-text-1);
   cursor: pointer;
 }

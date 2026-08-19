@@ -19,4 +19,6 @@ public interface FriendMapper {
     int deleteById(@Param("id") Long id);
 
     int countByCategoryId(@Param("categoryId") Long categoryId);
+
+    long countAll();
 }

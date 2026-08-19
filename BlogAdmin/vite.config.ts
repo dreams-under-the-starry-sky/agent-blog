@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
+  base: '/blog-manager/',
   plugins: [vue()],
   resolve: {
     alias: {
@@ -14,11 +15,11 @@ export default defineConfig({
     port: 5174,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8080',
+        target: 'http://127.0.0.1:8080/agent-blog/server',
         changeOrigin: true,
       },
       '/uploads': {
-        target: 'http://127.0.0.1:8080',
+        target: 'http://127.0.0.1:8080/agent-blog/server',
         changeOrigin: true,
       },
     },

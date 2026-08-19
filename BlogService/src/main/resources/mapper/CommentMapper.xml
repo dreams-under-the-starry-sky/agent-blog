@@ -26,7 +26,7 @@
                handle, notice, send, visible, browser, system_info, ip, province, city, district, create_time
         FROM blog_comment
         WHERE article_id = #{articleId} AND visible = 1
-        ORDER BY create_time ASC
+        ORDER BY id ASC
     </select>
 
     <select id="selectPage" resultType="com.blog.entity.Comment">
@@ -78,7 +78,17 @@
         SELECT c.id, c.article_id, c.content, c.nickname, c.create_time, a.title AS article_title
         FROM blog_comment c
         LEFT JOIN blog_article a ON a.id = c.article_id
-        ORDER BY c.create_time DESC
+        ORDER BY c.id DESC
         LIMIT #{limit}
+    </select>
+
+    <select id="countByIpSince" resultType="int">
+        SELECT COUNT(1) FROM blog_comment
+        WHERE ip = #{ip} AND IFNULL(blogger, 0) = 0 AND create_time &gt;= #{start}
+    </select>
+
+    <select id="countByEmailSince" resultType="int">
+        SELECT COUNT(1) FROM blog_comment
+        WHERE LOWER(email) = LOWER(#{email}) AND IFNULL(blogger, 0) = 0 AND create_time &gt;= #{start}
     </select>
 </mapper>

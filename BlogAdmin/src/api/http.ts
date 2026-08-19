@@ -12,20 +12,13 @@ http.interceptors.request.use((config) => {
 })
 
 http.interceptors.response.use(
-  (res) => {
-    const body = res.data
-    if (body && typeof body.code === 'number' && body.code !== 0) {
-      ElMessage.error(body.message || '请求失败')
-      return Promise.reject(new Error(body.message))
-    }
-    return body?.data
-  },
+  (res) => res.data,
   (err) => {
     if (err.response?.status === 401) {
       localStorage.removeItem('blog_admin_token')
       localStorage.removeItem('blog_admin_username')
       if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login'
+        window.location.href = `${import.meta.env.BASE_URL}login`
       }
     }
     ElMessage.error(err.response?.data?.message || err.message || '网络错误')

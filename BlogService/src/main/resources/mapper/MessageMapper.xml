@@ -23,10 +23,18 @@
 
     <select id="selectVisible" resultType="com.blog.entity.Message">
         SELECT id, page_id, parent_id, root_id, content, blogger, parent_nickname, nickname, email, avatar, website,
-               handle, notice, send, visible, browser, system_info, ip, province, city, district, create_time
+               handle, notice, send, visible, browser, system_info, ip, province, create_time
         FROM blog_message
         WHERE visible = 1
-        ORDER BY create_time ASC
+        ORDER BY id ASC
+    </select>
+
+    <select id="selectVisibleByPageId" resultType="com.blog.entity.Message">
+        SELECT id, page_id, parent_id, root_id, content, blogger, parent_nickname, nickname, email, avatar, website,
+               handle, notice, send, visible, browser, system_info, ip, province, create_time
+        FROM blog_message
+        WHERE visible = 1 AND page_id = #{pageId}
+        ORDER BY id ASC
     </select>
 
     <select id="selectPage" resultType="com.blog.entity.Message">
@@ -71,5 +79,15 @@
 
     <select id="countAll" resultType="long">
         SELECT COUNT(1) FROM blog_message
+    </select>
+
+    <select id="countByIpSince" resultType="int">
+        SELECT COUNT(1) FROM blog_message
+        WHERE ip = #{ip} AND IFNULL(blogger, 0) = 0 AND create_time &gt;= #{start}
+    </select>
+
+    <select id="countByEmailSince" resultType="int">
+        SELECT COUNT(1) FROM blog_message
+        WHERE LOWER(email) = LOWER(#{email}) AND IFNULL(blogger, 0) = 0 AND create_time &gt;= #{start}
     </select>
 </mapper>

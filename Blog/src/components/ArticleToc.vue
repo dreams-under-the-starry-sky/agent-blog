@@ -21,6 +21,14 @@ function onScroll() {
   activeId.value = current
 }
 
+function jump(event: MouseEvent, id: string) {
+  event.preventDefault()
+  const el = document.getElementById(id)
+  if (!el) return
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  activeId.value = id
+}
+
 watch(() => props.headings, onScroll, { deep: true })
 
 onMounted(() => {
@@ -43,6 +51,7 @@ onUnmounted(() => {
         :href="`#${item.id}`"
         class="link"
         :class="{ on: activeId === item.id, [`lv-${item.level}`]: true }"
+        @click="jump($event, item.id)"
       >
         {{ item.text }}
       </a>
@@ -57,7 +66,7 @@ onUnmounted(() => {
 }
 h3 {
   margin: 0 0 0.75rem;
-  font-size: 0.9rem;
+  font-size: calc(0.9rem + 2px);
   color: var(--c-text-1);
 }
 nav {
@@ -70,7 +79,7 @@ nav {
   padding: 0.4rem 0.5rem;
   border-radius: 0.5rem;
   color: var(--c-text-2);
-  font-size: 0.85rem;
+  font-size: calc(0.85rem + 2px);
   line-height: 1.45;
 }
 .link:hover,
@@ -78,11 +87,11 @@ nav {
   background: var(--btn-plain-bg-hover);
   color: var(--btn-content);
 }
-.lv-3 { padding-left: 1rem; }
-.lv-4 { padding-left: 1.6rem; }
+.lv-3 { padding-left: 1.45rem; }
+.lv-4 { padding-left: 2.25rem; }
 .empty {
   margin: 0;
   color: var(--c-text-3);
-  font-size: 0.85rem;
+  font-size: calc(0.85rem + 2px);
 }
 </style>

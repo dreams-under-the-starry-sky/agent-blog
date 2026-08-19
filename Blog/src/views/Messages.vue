@@ -1,82 +1,59 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
-import MessageCircle from '@vicons/tabler/es/MessageCircle'
-import { frontApi } from '@/api/front'
-import type { Message } from '@/api/types'
-import CommentForm from '@/components/CommentForm.vue'
-import CommentList from '@/components/CommentList.vue'
-import { validateCommentInput } from '@/utils/comment'
-import { usePageReady } from '@/utils/pageReady'
+import MessageReport from '@vicons/tabler/es/MessageReport'
+import PageComments from '@/components/PageComments.vue'
+import { PAGE_IDS } from '@/config'
+import { usePageReadyOnMount } from '@/utils/pageReady'
 
-const list = ref<Message[]>([])
-const replyTo = ref<number | null>(null)
-const form = reactive({ nickname: '', email: '', website: '', content: '' })
-function countVisible(items?: Message[]): number {
-  return (items || []).reduce((sum, item) => {
-    if (item.visible === 0) return sum
-    return sum + 1 + countVisible(item.children)
-  }, 0)
-}
-const total = computed(() => countVisible(list.value))
-const beginReady = usePageReady()
-
-async function load() {
-  const pageReady = beginReady()
-  try {
-    list.value = await frontApi.messages()
-  } finally {
-    pageReady()
-  }
-}
-
-async function submit(parentId?: number | null) {
-  const error = validateCommentInput(form)
-  if (error) {
-    ElMessage.warning(error)
-    return
-  }
-  await frontApi.submitMessage({
-    parentId: parentId ?? undefined,
-    nickname: form.nickname,
-    email: form.email,
-    website: form.website,
-    content: form.content,
-  })
-  ElMessage.success('留言成功')
-  form.content = ''
-  replyTo.value = null
-  await load()
-}
-
-onMounted(load)
+usePageReadyOnMount()
 </script>
 
 <template>
   <div>
     <h1 class="page-title">留言板</h1>
-    <CommentForm v-model="form" placeholder="留下足迹" @submit="submit()" />
-    <h3 class="tk-title">
-      <MessageCircle class="tabler-icon" /> 评论 {{ total }}
-    </h3>
-    <CommentList
-      :items="list"
-      :reply-to="replyTo"
-      :form="form"
-      @reply="replyTo = $event"
-      @cancel="replyTo = null"
-      @submit="submit"
-    />
+    <section class="tips">
+      <h2>
+        <MessageReport class="tabler-icon" />
+        留言建议
+      </h2>
+      <ul>
+        <li>对本站有任何<mark>疑问</mark>、出现<mark>bug</mark>、做的不好、有什么<mark>改进</mark>的建议，都可以在下方留言~~~</li>
+        <li>留言建议留下你的<mark>昵称</mark>与<mark>邮箱</mark>，方便及时收到博主回复</li>
+        <li>请不要<mark>恶意评论</mark>，不要评论违反<mark>中国法律</mark>的内容</li>
+        <li><mark>广告</mark>勿扰</li>
+      </ul>
+    </section>
+    <PageComments :page-id="PAGE_IDS.messages" />
   </div>
 </template>
 
 <style scoped lang="scss">
-.tk-title {
+.tips {
+  margin: 0 0 1.75rem;
+}
+
+h2 {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  margin: 1.5rem 0 0.9rem;
-  font-size: 1.05rem;
+  margin: 1.1rem 0 0.65rem;
+  font-size: calc(1.35rem + 2px);
+  color: var(--btn-content);
+}
+
+ul {
+  margin: 0;
+  padding-left: 1.6rem;
+  line-height: 1.85;
   color: var(--c-text-1);
+}
+
+li {
+  list-style: disc;
+}
+
+mark {
+  background: transparent;
+  color: var(--primary);
+  font-weight: 700;
 }
 </style>

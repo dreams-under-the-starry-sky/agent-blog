@@ -1,5 +1,6 @@
 package com.blog.service;
 
+import jakarta.annotation.Resource;
 import net.coobird.thumbnailator.Thumbnails;
 import org.bytedeco.javacv.FFmpegFrameRecorder;
 import org.bytedeco.javacv.Java2DFrameConverter;
@@ -24,6 +25,32 @@ public class AvifCompressor {
     private static final int MAX_EDGE = 1600;
     private static final String[] CODECS = { "libaom-av1", "libsvtav1" };
 
+    @Resource
+    private LogService logService;
+
+    public byte[] compressToAvif(byte[] original) {
+        Path tmp = null;
+        try {
+            tmp = Files.createTempFile("blog-avif-", ".avif");
+            if (!compressToAvif(original, tmp)) {
+                return null;
+            }
+            return Files.readAllBytes(tmp);
+        } catch (IOException e) {
+            log.warn("avif compress failed: {}", e.getMessage());
+            logService.recordFail("压缩图片", e);
+            return null;
+        } finally {
+            if (tmp != null) {
+                try {
+                    Files.deleteIfExists(tmp);
+                } catch (IOException e) {
+                    log.warn("删除临时文件失败");
+                }
+            }
+        }
+    }
+
     public boolean compressToAvif(byte[] original, Path dest) {
         BufferedImage src = read(original);
         if (src == null) {
@@ -40,15 +67,18 @@ public class AvifCompressor {
                     }
                 } catch (Exception e) {
                     last = e;
+                    log.warn("avif codec {} failed", codec);
                     Files.deleteIfExists(dest);
                 }
             }
             if (last != null) {
                 log.warn("avif compress failed: {}", last.getMessage());
+                logService.recordFail("压缩图片", last);
             }
             return false;
         } catch (Exception e) {
             log.warn("avif compress failed: {}", e.getMessage());
+            logService.recordFail("压缩图片", e);
             return false;
         }
     }
@@ -57,6 +87,7 @@ public class AvifCompressor {
         try {
             return ImageIO.read(new ByteArrayInputStream(original));
         } catch (IOException e) {
+            log.warn("读取图片失败");
             return null;
         }
     }

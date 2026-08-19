@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { CONTENT_MAX, NICKNAME_MAX, validateCommentInput } from '@/utils/comment'
+import { CONTENT_MAX, EMAIL_MAX, NICKNAME_MAX, validateCommentInput } from '@/utils/comment'
 
 let form = defineModel<{
   nickname: string
@@ -22,6 +22,10 @@ withDefaults(defineProps<{
 const emit = defineEmits<{ submit: []; cancel: [] }>()
 
 function onSubmit() {
+  form.value.nickname = (form.value.nickname || '').trim()
+  form.value.email = (form.value.email || '').trim()
+  form.value.website = (form.value.website || '').trim()
+  form.value.content = (form.value.content || '').trim()
   const error = validateCommentInput(form.value)
   if (error) {
     ElMessage.warning(error)
@@ -39,15 +43,16 @@ function onSubmit() {
       :placeholder="placeholder"
       :maxlength="CONTENT_MAX"
       rows="5"
+      required
     />
     <div class="tk-meta">
       <label>
         <span>昵称</span>
-        <input v-model="form.nickname" type="text" placeholder="必填" :maxlength="NICKNAME_MAX" />
+        <input v-model="form.nickname" type="text" placeholder="必填" :maxlength="NICKNAME_MAX" required />
       </label>
       <label>
         <span>邮箱</span>
-        <input v-model="form.email" type="text" placeholder="选填" />
+        <input v-model="form.email" type="email" placeholder="必填" :maxlength="EMAIL_MAX" required />
       </label>
       <label>
         <span>网站</span>
@@ -103,7 +108,7 @@ function onSubmit() {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
+  font-size: calc(0.8rem + 2px);
   color: var(--c-text-2);
 }
 .tk-meta input {
@@ -125,7 +130,7 @@ function onSubmit() {
   height: 2rem;
   padding: 0 0.9rem;
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: calc(0.875rem + 2px);
   border-radius: 0.55rem;
 }
 .tk-send {

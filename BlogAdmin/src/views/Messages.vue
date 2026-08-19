@@ -140,6 +140,6 @@ onMounted(load)
   font-size: 14px;
 }
 .filter-select {
-  width: 140px;
+  width: 220px;
 }
 </style>

@@ -2,7 +2,6 @@ package com.blog.controller.admin;
 
 import com.blog.common.PageQuery;
 import com.blog.common.PageResult;
-import com.blog.common.Result;
 import com.blog.dto.MessageSubmitRequest;
 import com.blog.entity.Friend;
 import com.blog.entity.FriendCategory;
@@ -12,6 +11,7 @@ import com.blog.service.MiscService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,63 +33,63 @@ public class AdminUserController {
     private MiscService miscService;
 
     @GetMapping("/messages")
-    public Result<PageResult<Message>> messages(PageQuery query) {
-        return Result.ok(messageService.page(query));
+    public ResponseEntity<PageResult<Message>> messages(PageQuery query) {
+        return ResponseEntity.ok(messageService.page(query));
     }
 
     @PostMapping("/messages")
-    public Result<Void> replyMessage(@Valid @RequestBody MessageSubmitRequest req, HttpServletRequest request) {
+    public ResponseEntity<Void> replyMessage(@Valid @RequestBody MessageSubmitRequest req, HttpServletRequest request) {
         messageService.submit(req, request, true);
-        return Result.ok();
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping("/messages/{id}/handle")
-    public Result<Void> handleMessage(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
+    public ResponseEntity<Void> handleMessage(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
         messageService.handle(id, body.get("handle"));
-        return Result.ok();
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping("/messages/{id}/visible")
-    public Result<Void> visibleMessage(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
+    public ResponseEntity<Void> visibleMessage(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
         messageService.visible(id, body.get("visible"));
-        return Result.ok();
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/messages/{id}")
-    public Result<Void> deleteMessage(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteMessage(@PathVariable Long id) {
         messageService.delete(id);
-        return Result.ok();
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/friends")
-    public Result<List<Friend>> friends() {
-        return Result.ok(miscService.friends());
+    public ResponseEntity<List<Friend>> friends() {
+        return ResponseEntity.ok(miscService.friends());
     }
 
     @PostMapping("/friends")
-    public Result<Long> saveFriend(@RequestBody Friend friend) {
-        return Result.ok(miscService.saveFriend(friend));
+    public ResponseEntity<Long> saveFriend(@RequestBody Friend friend) {
+        return ResponseEntity.ok(miscService.saveFriend(friend));
     }
 
     @DeleteMapping("/friends/{id}")
-    public Result<Void> deleteFriend(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteFriend(@PathVariable Long id) {
         miscService.deleteFriend(id);
-        return Result.ok();
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/friend-categories")
-    public Result<List<FriendCategory>> friendCategories() {
-        return Result.ok(miscService.friendCategories());
+    public ResponseEntity<List<FriendCategory>> friendCategories() {
+        return ResponseEntity.ok(miscService.friendCategories());
     }
 
     @PostMapping("/friend-categories")
-    public Result<Long> saveFriendCategory(@RequestBody FriendCategory category) {
-        return Result.ok(miscService.saveFriendCategory(category));
+    public ResponseEntity<Long> saveFriendCategory(@Valid @RequestBody FriendCategory category) {
+        return ResponseEntity.ok(miscService.saveFriendCategory(category));
     }
 
     @DeleteMapping("/friend-categories/{id}")
-    public Result<Void> deleteFriendCategory(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteFriendCategory(@PathVariable Long id) {
         miscService.deleteFriendCategory(id);
-        return Result.ok();
+        return ResponseEntity.ok().build();
     }
 }

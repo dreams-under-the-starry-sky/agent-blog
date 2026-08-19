@@ -1,19 +1,19 @@
 package com.blog.dto;
 
+import com.blog.entity.Article;
+import com.blog.entity.Black;
 import lombok.Data;
 
 import java.util.List;
-import java.util.Map;
 
 @Data
 public class DashboardVO {
     private long articleCount;
-    private long publishedCount;
-    private long commentCount;
+    private long friendCount;
     private long messageCount;
-    private long essayCount;
-    private long pvTotal;
-    private List<Map<String, Object>> categoryStats;
-    private List<com.blog.entity.Article> recentArticles;
-    private List<com.blog.entity.Comment> recentComments;
+    private long commentCount;
+    private long blackCount;
+    private long errorLogCount;
+    private List<Article> hotArticles;
+    private List<Black> recentBlacks;
 }

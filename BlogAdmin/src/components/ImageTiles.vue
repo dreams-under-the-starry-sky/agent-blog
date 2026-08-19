@@ -14,7 +14,7 @@ export interface ImageItem {
 const images = defineModel<ImageItem[]>({ default: () => [] })
 const previewIndex = ref(-1)
 
-const previewList = computed(() => images.value.map((item) => mediaUrl(item.imgUrl || item.thumbnailUrl)))
+const previewList = computed(() => images.value.map((item) => mediaUrl(item.thumbnailUrl || item.imgUrl)))
 const tileSrc = (item: ImageItem) => mediaUrl(item.thumbnailUrl || item.imgUrl)
 
 async function addImage(file: File) {

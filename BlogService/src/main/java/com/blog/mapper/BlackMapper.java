@@ -17,4 +17,8 @@ public interface BlackMapper {
     int deleteById(@Param("id") Integer id);
 
     int countMatch(@Param("ip") String ip, @Param("nickname") String nickname, @Param("email") String email);
+
+    long countAll();
+
+    List<Black> selectSince(@Param("start") java.time.LocalDateTime start);
 }

@@ -1,6 +1,7 @@
 package com.blog.service;
 
 import com.blog.common.BizException;
+import com.blog.common.ErrorCode;
 import com.blog.dto.LoginRequest;
 import com.blog.dto.LoginResponse;
 import com.blog.dto.UpdatePasswordRequest;
@@ -9,12 +10,15 @@ import com.blog.entity.User;
 import com.blog.mapper.UserMapper;
 import com.blog.security.JwtUtil;
 import jakarta.annotation.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 @Service
 public class AuthService {
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+
     @Resource
     private UserMapper userMapper;
     @Resource
@@ -25,13 +29,13 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) {
         User user = userMapper.findByUsername(request.getUsername());
         if (user == null) {
-            throw new BizException("用户名或密码错误");
+            throw new BizException(ErrorCode.INVALID_CREDENTIALS);
         }
         if (Boolean.TRUE.equals(user.getDisable())) {
-            throw new BizException("账号已被禁用");
+            throw new BizException(ErrorCode.ACCOUNT_DISABLED);
         }
         if (!matches(request.getPassword(), user.getPassword())) {
-            throw new BizException("用户名或密码错误");
+            throw new BizException(ErrorCode.INVALID_CREDENTIALS);
         }
         if (isLegacyPassword(user.getPassword())) {
             userMapper.updatePassword(user.getId(), passwordEncoder.encode(request.getPassword()));
@@ -42,20 +46,14 @@ public class AuthService {
     public LoginResponse updateUsername(String currentUsername, UpdateUsernameRequest request) {
         User user = requireCurrent(currentUsername);
         if (!matches(request.getPassword(), user.getPassword())) {
-            throw new BizException("当前密码错误");
+            throw new BizException(ErrorCode.CURRENT_PASSWORD_WRONG);
         }
-        String username = request.getUsername() == null ? "" : request.getUsername().trim();
-        if (!StringUtils.hasText(username)) {
-            throw new BizException("用户名不能为空");
-        }
-        if (username.length() > 15) {
-            throw new BizException("用户名不能超过15个字符");
-        }
+        String username = request.getUsername().trim();
         if (username.equals(user.getUsername())) {
-            throw new BizException("用户名未修改");
+            throw new BizException(ErrorCode.USERNAME_UNCHANGED);
         }
         if (userMapper.countByUsername(username, user.getId()) > 0) {
-            throw new BizException("用户名已存在");
+            throw new BizException(ErrorCode.USERNAME_EXISTS);
         }
         userMapper.updateUsername(user.getId(), username);
         return new LoginResponse(jwtUtil.generate(username), username, user.getRole());
@@ -64,17 +62,11 @@ public class AuthService {
     public void updatePassword(String currentUsername, UpdatePasswordRequest request) {
         User user = requireCurrent(currentUsername);
         if (!matches(request.getOldPassword(), user.getPassword())) {
-            throw new BizException("当前密码错误");
+            throw new BizException(ErrorCode.CURRENT_PASSWORD_WRONG);
         }
-        String next = request.getNewPassword() == null ? "" : request.getNewPassword().trim();
-        if (next.length() < 6) {
-            throw new BizException("新密码至少6位");
-        }
-        if (next.length() > 72) {
-            throw new BizException("新密码过长");
-        }
+        String next = request.getNewPassword().trim();
         if (matches(next, user.getPassword())) {
-            throw new BizException("新密码不能与当前密码相同");
+            throw new BizException(ErrorCode.PASSWORD_SAME_AS_OLD);
         }
         userMapper.updatePassword(user.getId(), passwordEncoder.encode(next));
     }
@@ -82,7 +74,7 @@ public class AuthService {
     private User requireCurrent(String currentUsername) {
         User user = userMapper.findByUsername(currentUsername);
         if (user == null) {
-            throw new BizException("账号不存在");
+            throw new BizException(ErrorCode.ACCOUNT_NOT_FOUND);
         }
         return user;
     }
@@ -95,6 +87,7 @@ public class AuthService {
             try {
                 return passwordEncoder.matches(raw, stored);
             } catch (Exception ex) {
+                log.warn("校验密码失败");
                 return false;
             }
         }

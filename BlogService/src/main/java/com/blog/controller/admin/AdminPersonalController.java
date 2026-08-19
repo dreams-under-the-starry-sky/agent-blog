@@ -2,7 +2,6 @@ package com.blog.controller.admin;
 
 import com.blog.common.PageQuery;
 import com.blog.common.PageResult;
-import com.blog.common.Result;
 import com.blog.dto.EssaySaveRequest;
 import com.blog.dto.ImageSaveItem;
 import com.blog.dto.LoginResponse;
@@ -17,6 +16,7 @@ import com.blog.service.EssayService;
 import com.blog.service.RecordService;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,23 +40,23 @@ public class AdminPersonalController {
     private RecordService recordService;
 
     @PutMapping("/account/username")
-    public Result<LoginResponse> updateUsername(@Valid @RequestBody UpdateUsernameRequest request) {
-        return Result.ok(authService.updateUsername(currentUsername(), request));
+    public ResponseEntity<LoginResponse> updateUsername(@Valid @RequestBody UpdateUsernameRequest request) {
+        return ResponseEntity.ok(authService.updateUsername(currentUsername(), request));
     }
 
     @PutMapping("/account/password")
-    public Result<Void> updatePassword(@Valid @RequestBody UpdatePasswordRequest request) {
+    public ResponseEntity<Void> updatePassword(@Valid @RequestBody UpdatePasswordRequest request) {
         authService.updatePassword(currentUsername(), request);
-        return Result.ok();
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/essays")
-    public Result<PageResult<Essay>> essays(PageQuery query) {
-        return Result.ok(essayService.page(query));
+    public ResponseEntity<PageResult<Essay>> essays(PageQuery query) {
+        return ResponseEntity.ok(essayService.page(query));
     }
 
     @PostMapping("/essays")
-    public Result<Long> saveEssay(@RequestBody EssaySaveRequest req) {
+    public ResponseEntity<Long> saveEssay(@RequestBody EssaySaveRequest req) {
         Essay essay = new Essay();
         essay.setId(req.getId());
         essay.setContent(req.getContent());
@@ -65,51 +65,51 @@ public class AdminPersonalController {
         essay.setProvince(req.getProvince());
         essay.setCity(req.getCity());
         essay.setDistrict(req.getDistrict());
-        return Result.ok(essayService.save(essay, ImageSaveItem.normalize(req.getImages(), req.getImageUrls())));
+        return ResponseEntity.ok(essayService.save(essay, ImageSaveItem.normalize(req.getImages(), req.getImageUrls())));
     }
 
     @DeleteMapping("/essays/{id}")
-    public Result<Void> deleteEssay(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteEssay(@PathVariable Long id) {
         essayService.delete(id);
-        return Result.ok();
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/records")
-    public Result<PageResult<Record>> records(PageQuery query) {
-        return Result.ok(recordService.page(query));
+    public ResponseEntity<PageResult<Record>> records(PageQuery query) {
+        return ResponseEntity.ok(recordService.page(query));
     }
 
     @PostMapping("/records")
-    public Result<Long> saveRecord(@RequestBody RecordSaveRequest req) {
+    public ResponseEntity<Long> saveRecord(@RequestBody RecordSaveRequest req) {
         Record record = new Record();
         record.setId(req.getId());
         record.setCategoryId(req.getCategoryId());
         record.setHappenTime(req.getHappenTime());
         record.setContent(req.getContent());
         record.setStatus(req.getStatus());
-        return Result.ok(recordService.save(record, ImageSaveItem.normalize(req.getImages(), req.getImageUrls())));
+        return ResponseEntity.ok(recordService.save(record, ImageSaveItem.normalize(req.getImages(), req.getImageUrls())));
     }
 
     @DeleteMapping("/records/{id}")
-    public Result<Void> deleteRecord(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteRecord(@PathVariable Long id) {
         recordService.delete(id);
-        return Result.ok();
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/record-categories")
-    public Result<List<RecordCategory>> recordCategories() {
-        return Result.ok(recordService.categories());
+    public ResponseEntity<List<RecordCategory>> recordCategories() {
+        return ResponseEntity.ok(recordService.categories());
     }
 
     @PostMapping("/record-categories")
-    public Result<Long> saveRecordCategory(@RequestBody RecordCategory category) {
-        return Result.ok(recordService.saveCategory(category));
+    public ResponseEntity<Long> saveRecordCategory(@Valid @RequestBody RecordCategory category) {
+        return ResponseEntity.ok(recordService.saveCategory(category));
     }
 
     @DeleteMapping("/record-categories/{id}")
-    public Result<Void> deleteRecordCategory(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteRecordCategory(@PathVariable Long id) {
         recordService.deleteCategory(id);
-        return Result.ok();
+        return ResponseEntity.ok().build();
     }
 
     private String currentUsername() {

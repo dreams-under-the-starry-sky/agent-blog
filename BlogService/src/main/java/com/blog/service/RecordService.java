@@ -1,6 +1,7 @@
 package com.blog.service;
 
 import com.blog.common.BizException;
+import com.blog.common.ErrorCode;
 import com.blog.common.IdGenerator;
 import com.blog.common.PageQuery;
 import com.blog.common.PageResult;
@@ -14,7 +15,6 @@ import com.blog.mapper.RecordMapper;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 import java.util.HashSet;
 import java.util.List;
@@ -109,12 +109,9 @@ public class RecordService {
     }
 
     public Long saveCategory(RecordCategory category) {
-        if (!StringUtils.hasText(category.getName())) {
-            throw new BizException("分类名不能为空");
-        }
         category.setName(category.getName().trim());
         if (recordCategoryMapper.countByName(category.getName(), category.getId()) > 0) {
-            throw new BizException("分类名已存在");
+            throw new BizException(ErrorCode.CATEGORY_NAME_EXISTS);
         }
         if (category.getId() == null) {
             category.setId(IdGenerator.nextId());
@@ -127,7 +124,7 @@ public class RecordService {
 
     public void deleteCategory(Long id) {
         if (recordMapper.countByCategoryId(id) > 0) {
-            throw new BizException("该分类下仍有记录，无法删除");
+            throw new BizException(ErrorCode.CATEGORY_HAS_RECORDS);
         }
         recordCategoryMapper.deleteById(id);
     }

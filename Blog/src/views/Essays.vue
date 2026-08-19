@@ -1,28 +1,63 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { Waterfall } from 'vue-waterfall-plugin-next'
 import 'vue-waterfall-plugin-next/dist/style.css'
 import { frontApi } from '@/api/front'
 import type { Essay, PageResult } from '@/api/types'
+import FrameBtn from '@/components/FrameBtn.vue'
 import { formatTime, mediaUrl } from '@/utils/format'
 import { usePageReady } from '@/utils/pageReady'
 
+const PAGE_SIZE = 10
 const page = ref(1)
 const data = ref<PageResult<Essay>>({ total: 0, list: [] })
 const waterfallRef = ref<{ renderer: () => void } | null>(null)
+const loadingMore = ref(false)
 const beginReady = usePageReady()
+const loadedAll = computed(() => data.value.total > 0 && data.value.list.length >= data.value.total)
 
 async function load() {
   const pageReady = beginReady()
+  page.value = 1
   try {
-    data.value = await frontApi.essays({ page: page.value, size: 12 })
+    data.value = await frontApi.essays({ page: 1, size: PAGE_SIZE })
   } finally {
     pageReady()
   }
 }
 
+async function loadMore() {
+  if (loadedAll.value || loadingMore.value) return
+  loadingMore.value = true
+  const next = page.value + 1
+  try {
+    const extra = await frontApi.essays({ page: next, size: PAGE_SIZE })
+    page.value = next
+    data.value = {
+      total: extra.total,
+      list: [...data.value.list, ...extra.list],
+    }
+  } finally {
+    loadingMore.value = false
+  }
+}
+
 function relayout() {
   waterfallRef.value?.renderer()
+}
+
+function imgSrc(img: { imgUrl?: string; thumbnailUrl?: string }) {
+  return mediaUrl(img.thumbnailUrl || img.imgUrl)
+}
+
+function previewList(images?: Essay['images']) {
+  return (images || []).map(imgSrc)
+}
+
+function imgsClass(count: number) {
+  if (count === 1) return 'single'
+  if (count === 2) return 'pair'
+  return 'multi'
 }
 
 onMounted(load)
@@ -50,12 +85,19 @@ onMounted(load)
       <template #default="{ item }">
         <article class="card card-base">
           <p>{{ item.content }}</p>
-          <div v-if="item.images?.length" class="imgs">
-            <img
+          <div
+            v-if="item.images?.length"
+            class="imgs"
+            :class="imgsClass(item.images.length)"
+          >
+            <el-image
               v-for="(img, i) in item.images"
               :key="i"
-              :src="mediaUrl(img.thumbnailUrl || img.imgUrl)"
-              alt=""
+              :src="imgSrc(img)"
+              :preview-src-list="previewList(item.images)"
+              :initial-index="i"
+              :fit="item.images.length === 1 ? 'contain' : 'cover'"
+              preview-teleported
               @load="relayout"
             />
           </div>
@@ -64,16 +106,11 @@ onMounted(load)
       </template>
     </Waterfall>
     <el-empty v-else description="暂无动态" />
-    <el-pagination
-      v-if="data.total > 12"
-      class="pager"
-      background
-      layout="prev, pager, next"
-      :total="data.total"
-      :page-size="12"
-      v-model:current-page="page"
-      @current-change="load"
-    />
+    <div v-if="data.total" class="more-wrap">
+      <FrameBtn sweep="ltr" :disabled="loadedAll" :loading="loadingMore" @click="loadMore">
+        {{ loadedAll ? '~Bottom~' : 'Get More' }}
+      </FrameBtn>
+    </div>
   </div>
 </template>
 
@@ -81,15 +118,39 @@ onMounted(load)
 .card { padding: 1rem; }
 p { margin: 0; color: var(--c-text-1); white-space: pre-wrap; word-break: break-word; }
 .imgs {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
   margin-top: 0.6rem;
 }
-.imgs img {
+.imgs :deep(.el-image) {
+  display: block;
   width: 100%;
   border-radius: 0.5rem;
-  display: block;
+  overflow: hidden;
+  cursor: zoom-in;
+  background: var(--btn-regular-bg);
 }
-time { display: inline-block; margin-top: 0.6rem; color: var(--c-text-2); font-size: 0.85rem; }
+.imgs.pair,
+.imgs.multi {
+  display: grid;
+  gap: 0.35rem;
+}
+.imgs.pair {
+  grid-template-columns: repeat(2, 1fr);
+}
+.imgs.multi {
+  grid-template-columns: repeat(3, 1fr);
+}
+.imgs.pair :deep(.el-image),
+.imgs.multi :deep(.el-image) {
+  aspect-ratio: 1;
+}
+.imgs :deep(.el-image img) {
+  width: 100%;
+  height: 100%;
+}
+time { display: inline-block; margin-top: 0.6rem; color: var(--c-text-2); font-size: calc(0.85rem + 2px); }
+.more-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
 </style>

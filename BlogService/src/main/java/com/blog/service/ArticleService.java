@@ -1,6 +1,7 @@
 package com.blog.service;
 
 import com.blog.common.BizException;
+import com.blog.common.ErrorCode;
 import com.blog.common.IdGenerator;
 import com.blog.common.PageQuery;
 import com.blog.common.PageResult;
@@ -19,7 +20,6 @@ import com.blog.mapper.CategoryMapper;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -59,7 +59,7 @@ public class ArticleService {
     public Article detail(Long id, boolean increasePv) {
         Article article = articleMapper.selectById(id);
         if (article == null) {
-            throw new BizException("文章不存在");
+            throw new BizException(ErrorCode.ARTICLE_NOT_FOUND);
         }
         fillTags(article);
         article.setImages(articleImgMapper.selectByArticleId(id));
@@ -72,16 +72,13 @@ public class ArticleService {
 
     @Transactional
     public Long save(ArticleSaveRequest req) {
-        if (!StringUtils.hasText(req.getTitle())) {
-            throw new BizException("标题不能为空");
-        }
         boolean creating = req.getId() == null;
         Long oldCategory = null;
         Article old = null;
         if (!creating) {
             old = articleMapper.selectById(req.getId());
             if (old == null) {
-                throw new BizException("文章不存在");
+                throw new BizException(ErrorCode.ARTICLE_NOT_FOUND);
             }
             oldCategory = old.getCategoryId();
         }
@@ -201,11 +198,14 @@ public class ArticleService {
     }
 
     private List<ImageSaveItem> contentImages(String content, List<ImageSaveItem> uploaded) {
-        Map<String, String> thumbs = new LinkedHashMap<>();
+        Map<String, ImageSaveItem> byUrl = new LinkedHashMap<>();
         if (uploaded != null) {
             for (ImageSaveItem item : uploaded) {
                 if (item.getImgUrl() != null) {
-                    thumbs.put(item.getImgUrl(), item.getThumbnailUrl() != null ? item.getThumbnailUrl() : item.getImgUrl());
+                    byUrl.put(item.getImgUrl(), item);
+                }
+                if (item.getThumbnailUrl() != null) {
+                    byUrl.putIfAbsent(item.getThumbnailUrl(), item);
                 }
             }
         }
@@ -217,9 +217,16 @@ public class ArticleService {
             if (url == null || !seen.add(url)) {
                 continue;
             }
+            ImageSaveItem uploadedItem = byUrl.get(url);
             ImageSaveItem item = new ImageSaveItem();
-            item.setImgUrl(url);
-            item.setThumbnailUrl(trimUrl(thumbs.getOrDefault(url, url)));
+            if (uploadedItem != null) {
+                item.setImgUrl(trimUrl(uploadedItem.getImgUrl()));
+                item.setThumbnailUrl(trimUrl(uploadedItem.getThumbnailUrl() != null
+                        ? uploadedItem.getThumbnailUrl() : uploadedItem.getImgUrl()));
+            } else {
+                item.setImgUrl(url);
+                item.setThumbnailUrl(url);
+            }
             result.add(item);
         }
         return result;

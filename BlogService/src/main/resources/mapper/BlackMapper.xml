@@ -32,4 +32,15 @@
             </if>
         </where>
     </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(1) FROM blog_black
+    </select>
+
+    <select id="selectSince" resultType="com.blog.entity.Black">
+        SELECT id, ip, position, nickname, email, create_time
+        FROM blog_black
+        WHERE create_time &gt;= #{start}
+        ORDER BY id DESC
+    </select>
 </mapper>

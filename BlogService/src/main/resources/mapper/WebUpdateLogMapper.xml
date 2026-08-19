@@ -4,7 +4,7 @@
     <select id="selectAll" resultType="com.blog.entity.WebUpdateLog">
         SELECT id, title, description, create_time, update_time
         FROM blog_web_update_log
-        ORDER BY create_time DESC, id DESC
+        ORDER BY id DESC
     </select>
 
     <insert id="insert">

@@ -5,6 +5,7 @@ import ChevronDown from '@vicons/tabler/es/ChevronDown'
 import Clock from '@vicons/tabler/es/Clock'
 import DeviceDesktop from '@vicons/tabler/es/DeviceDesktop'
 import MapPin from '@vicons/tabler/es/MapPin'
+import World from '@vicons/tabler/es/World'
 import { formatTime } from '@/utils/format'
 import CommentForm from '@/components/CommentForm.vue'
 
@@ -17,7 +18,10 @@ export interface ThreadItem {
   website?: string
   createTime?: string
   province?: string
+  city?: string
+  district?: string
   systemInfo?: string
+  browser?: string
   visible?: number
   children?: ThreadItem[]
 }
@@ -73,9 +77,10 @@ function hue(name?: string) {
   return hash % 360
 }
 
-function osLabel(value?: string) {
-  if (!value || value === 'web') return ''
-  return value
+function displayMeta(value?: string) {
+  const text = (value || '').trim()
+  if (!text || /^unknown$/i.test(text) || text === 'web') return '未知'
+  return text
 }
 </script>
 
@@ -91,11 +96,14 @@ function osLabel(value?: string) {
           <strong v-else class="tk-nick">{{ item.nickname }}</strong>
           <span v-if="item.blogger === 1" class="tk-tag">博主</span>
           <span v-if="item.parentNickname" class="tk-to">回复 @{{ item.parentNickname }}</span>
-          <span v-if="item.province" class="tk-info">
-            <MapPin class="tabler-icon" />{{ item.province }}
+          <span class="tk-info">
+            <MapPin class="tabler-icon" />{{ displayMeta(item.province) }}
           </span>
-          <span v-if="osLabel(item.systemInfo)" class="tk-info">
-            <DeviceDesktop class="tabler-icon" />{{ osLabel(item.systemInfo) }}
+          <span class="tk-info">
+            <DeviceDesktop class="tabler-icon" />{{ displayMeta(item.systemInfo) }}
+          </span>
+          <span class="tk-info">
+            <World class="tabler-icon" />{{ displayMeta(item.browser) }}
           </span>
           <span class="tk-time">
             <Clock class="tabler-icon" />{{ formatTime(item.createTime) }}
@@ -125,11 +133,14 @@ function osLabel(value?: string) {
                 <strong v-else class="tk-nick">{{ child.nickname }}</strong>
                 <span v-if="child.blogger === 1" class="tk-tag">博主</span>
                 <span v-if="child.parentNickname" class="tk-to">@{{ child.parentNickname }}</span>
-                <span v-if="child.province" class="tk-info">
-                  <MapPin class="tabler-icon" />{{ child.province }}
+                <span class="tk-info">
+                  <MapPin class="tabler-icon" />{{ displayMeta(child.province) }}
                 </span>
-                <span v-if="osLabel(child.systemInfo)" class="tk-info">
-                  <DeviceDesktop class="tabler-icon" />{{ osLabel(child.systemInfo) }}
+                <span class="tk-info">
+                  <DeviceDesktop class="tabler-icon" />{{ displayMeta(child.systemInfo) }}
+                </span>
+                <span class="tk-info">
+                  <World class="tabler-icon" />{{ displayMeta(child.browser) }}
                 </span>
                 <span class="tk-time">
                   <Clock class="tabler-icon" />{{ formatTime(child.createTime) }}
@@ -201,7 +212,7 @@ function osLabel(value?: string) {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem 0.55rem;
-  font-size: 0.85rem;
+  font-size: calc(0.85rem + 2px);
   color: var(--c-text-3);
 }
 .tk-nick {
@@ -213,15 +224,15 @@ function osLabel(value?: string) {
   border-radius: 0.45rem;
   background: var(--btn-regular-bg);
   color: var(--btn-content);
-  font-size: 0.75rem;
+  font-size: calc(0.75rem + 2px);
 }
-.tk-to { color: var(--btn-content); font-size: 0.8rem; }
+.tk-to { color: var(--btn-content); font-size: calc(0.8rem + 2px); }
 .tk-info {
   display: inline-flex;
   align-items: center;
   gap: 0.18rem;
   color: var(--c-text-3);
-  font-size: 0.78rem;
+  font-size: calc(0.78rem + 2px);
 }
 .tk-time {
   display: inline-flex;
@@ -260,7 +271,7 @@ function osLabel(value?: string) {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  font-size: 0.85rem;
+  font-size: calc(0.85rem + 2px);
 }
 .tk-more:hover {
   border-color: var(--btn-content);

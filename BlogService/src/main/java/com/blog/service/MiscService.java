@@ -1,6 +1,7 @@
 package com.blog.service;
 
 import com.blog.common.BizException;
+import com.blog.common.ErrorCode;
 import com.blog.common.IdGenerator;
 import com.blog.common.PageQuery;
 import com.blog.common.PageResult;
@@ -18,14 +19,16 @@ import com.blog.mapper.BlackMapper;
 import com.blog.mapper.BlogLogMapper;
 import com.blog.mapper.CommentMapper;
 import com.blog.mapper.EmailRecordMapper;
-import com.blog.mapper.EssayMapper;
 import com.blog.mapper.FileDelFailMapper;
 import com.blog.mapper.FriendCategoryMapper;
 import com.blog.mapper.FriendMapper;
 import com.blog.mapper.MessageMapper;
 import com.blog.mapper.MusicMapper;
+import com.blog.storage.ObjectStorage;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -36,12 +39,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 public class MiscService {
+    private static final Logger log = LoggerFactory.getLogger(MiscService.class);
     @Resource
     private FriendMapper friendMapper;
     @Resource
@@ -63,10 +66,14 @@ public class MiscService {
     @Resource
     private MessageMapper messageMapper;
     @Resource
-    private EssayMapper essayMapper;
-    @Resource
     private AvifCompressor avifCompressor;
+    @Resource
+    private ObjectStorage objectStorage;
+    @Resource
+    private LogService logService;
 
+    @Value("${blog.storage.prefix:agent-blog}")
+    private String storagePrefix;
     @Value("${blog.upload.dir:uploads}")
     private String uploadDir;
     @Value("${blog.upload.url-prefix:/uploads}")
@@ -77,6 +84,7 @@ public class MiscService {
     @PostConstruct
     public void initUploadRoot() {
         this.uploadRoot = Paths.get(uploadDir).toAbsolutePath().normalize();
+        log.info("当前文件存储: {}", objectStorage.getClass().getSimpleName());
     }
 
     public List<Friend> friends() {
@@ -105,12 +113,9 @@ public class MiscService {
     }
 
     public Long saveFriendCategory(FriendCategory category) {
-        if (!StringUtils.hasText(category.getName())) {
-            throw new BizException("分类名不能为空");
-        }
         category.setName(category.getName().trim());
         if (friendCategoryMapper.countByName(category.getName(), category.getId()) > 0) {
-            throw new BizException("分类名已存在");
+            throw new BizException(ErrorCode.CATEGORY_NAME_EXISTS);
         }
         if (category.getSort() == null) {
             category.setSort(99);
@@ -126,7 +131,7 @@ public class MiscService {
 
     public void deleteFriendCategory(Long id) {
         if (friendMapper.countByCategoryId(id) > 0) {
-            throw new BizException("该分类下仍有友链，无法删除");
+            throw new BizException(ErrorCode.CATEGORY_HAS_FRIENDS);
         }
         friendCategoryMapper.deleteById(id);
     }
@@ -136,12 +141,6 @@ public class MiscService {
     }
 
     public Long saveMusic(Music music) {
-        if (!StringUtils.hasText(music.getName())) {
-            throw new BizException("请填写歌名");
-        }
-        if (!StringUtils.hasText(music.getUrl())) {
-            throw new BizException("请填写播放地址");
-        }
         music.setName(music.getName().trim());
         music.setAuthor(trimToNull(music.getAuthor()));
         music.setUrl(music.getUrl().trim());
@@ -195,41 +194,42 @@ public class MiscService {
     public DashboardVO dashboard() {
         DashboardVO vo = new DashboardVO();
         vo.setArticleCount(articleMapper.countAll());
-        vo.setPublishedCount(articleMapper.countPublished());
-        vo.setCommentCount(commentMapper.countAll());
+        vo.setFriendCount(friendMapper.countAll());
         vo.setMessageCount(messageMapper.countAll());
-        vo.setEssayCount(essayMapper.countAll());
-        Integer pv = articleMapper.sumPv();
-        vo.setPvTotal(pv == null ? 0 : pv);
-        vo.setCategoryStats(articleMapper.countByCategory());
-        vo.setRecentArticles(articleMapper.selectRecent(5));
-        vo.setRecentComments(commentMapper.selectRecent(5));
+        vo.setCommentCount(commentMapper.countAll());
+        vo.setBlackCount(blackMapper.countAll());
+        vo.setErrorLogCount(blogLogMapper.countFailed());
+        vo.setHotArticles(articleMapper.selectHot(10));
+        vo.setRecentBlacks(blackMapper.selectSince(LocalDate.now().minusDays(1).atStartOfDay()));
         return vo;
     }
 
-    public UploadResult upload(MultipartFile file) throws IOException {
+    public UploadResult upload(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new BizException("请选择文件");
+            throw new BizException(ErrorCode.FILE_REQUIRED);
         }
         String original = file.getOriginalFilename();
         String ext = "";
         if (original != null && original.contains(".")) {
             ext = original.substring(original.lastIndexOf('.')).toLowerCase();
         }
-        String month = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM"));
-        Path dir = uploadRoot.resolve(month);
-        Files.createDirectories(dir);
         String stem = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
         String name = stem + ext;
-        Path dest = dir.resolve(name);
-        byte[] bytes = file.getBytes();
-        Files.write(dest, bytes);
-        String url = clipUrl(urlPrefix + "/" + month + "/" + name);
+        String key = objectKey(name);
+        byte[] bytes;
+        try {
+            bytes = file.getBytes();
+        } catch (IOException e) {
+            log.warn("读取上传文件失败", e);
+            logService.recordFail("上传文件", e);
+            throw new BizException(ErrorCode.FILE_READ_FAILED, e);
+        }
+        String url = clipUrl(objectStorage.put(key, bytes, contentType(file, ext)));
         String thumbnailUrl = url;
         String avifName = ".avif".equals(ext) ? stem + "_t.avif" : stem + ".avif";
-        Path avifDest = dir.resolve(avifName);
-        if (avifCompressor.compressToAvif(bytes, avifDest)) {
-            thumbnailUrl = clipUrl(urlPrefix + "/" + month + "/" + avifName);
+        byte[] avif = avifCompressor.compressToAvif(bytes);
+        if (avif != null && avif.length > 0) {
+            thumbnailUrl = clipUrl(objectStorage.put(objectKey(avifName), avif, "image/avif"));
         }
         return UploadResult.of(url, thumbnailUrl);
     }
@@ -244,7 +244,29 @@ public class MiscService {
     }
 
     public void tryDeleteFile(String url) {
-        if (url == null || !url.startsWith(urlPrefix)) {
+        if (!StringUtils.hasText(url)) {
+            return;
+        }
+        try {
+            String key = objectStorage.extractKey(url);
+            if (StringUtils.hasText(key)) {
+                objectStorage.delete(key);
+                return;
+            }
+            deleteLegacyLocal(url);
+        } catch (Exception e) {
+            log.warn("删除文件失败 url={}", url, e);
+            String extra = e instanceof BizException biz ? biz.getErrorCode().getMessage() : ErrorCode.FILE_DELETE_FAILED.getMessage();
+            logService.recordFail("删除文件", url, e);
+            FileDelFail fail = new FileDelFail();
+            fail.setFileKey(url.length() > 60 ? url.substring(0, 60) : url);
+            fail.setExtra(extra);
+            fileDelFailMapper.insert(fail);
+        }
+    }
+
+    private void deleteLegacyLocal(String url) throws IOException {
+        if (!url.startsWith(urlPrefix)) {
             return;
         }
         String relative = url.substring(urlPrefix.length());
@@ -255,14 +277,34 @@ public class MiscService {
         if (!file.startsWith(uploadRoot)) {
             return;
         }
-        try {
-            Files.deleteIfExists(file);
-        } catch (Exception e) {
-            FileDelFail fail = new FileDelFail();
-            fail.setFileKey(url.length() > 60 ? url.substring(0, 60) : url);
-            fail.setExtra(e.getMessage());
-            fileDelFailMapper.insert(fail);
+        Files.deleteIfExists(file);
+    }
+
+    private String objectKey(String filename) {
+        LocalDate now = LocalDate.now();
+        int quarter = (now.getMonthValue() - 1) / 3 + 1;
+        String prefix = StringUtils.hasText(storagePrefix) ? storagePrefix.trim() : "agent-blog";
+        while (prefix.endsWith("/")) {
+            prefix = prefix.substring(0, prefix.length() - 1);
         }
+        return prefix + "/" + now.getYear() + "/Q" + quarter + "/" + filename;
+    }
+
+    private static String contentType(MultipartFile file, String ext) {
+        String type = file.getContentType();
+        if (StringUtils.hasText(type) && !"application/octet-stream".equals(type)) {
+            return type;
+        }
+        return switch (ext) {
+            case ".png" -> "image/png";
+            case ".jpg", ".jpeg" -> "image/jpeg";
+            case ".gif" -> "image/gif";
+            case ".webp" -> "image/webp";
+            case ".avif" -> "image/avif";
+            case ".svg" -> "image/svg+xml";
+            case ".mp3" -> "audio/mpeg";
+            default -> "application/octet-stream";
+        };
     }
 
     public String clipUrl(String url) {

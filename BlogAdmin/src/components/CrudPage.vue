@@ -15,9 +15,13 @@ withDefaults(defineProps<{
   createText?: string
   showCreate?: boolean
   showKeyword?: boolean
+  showSearch?: boolean
+  showReset?: boolean
 }>(), {
   showCreate: true,
   showKeyword: true,
+  showSearch: true,
+  showReset: true,
 })
 
 const emit = defineEmits<{
@@ -66,11 +70,11 @@ function onPageChange() {
           @keyup.enter="onSearch"
         />
         <slot name="filters" />
-        <el-button type="primary" @click="onSearch">
+        <el-button v-if="showSearch" type="primary" @click="onSearch">
           <template #icon><Search class="btn-icon" /></template>
           查询
         </el-button>
-        <el-button @click="onReset">
+        <el-button v-if="showReset" @click="onReset">
           <template #icon><Refresh class="btn-icon" /></template>
           重置
         </el-button>

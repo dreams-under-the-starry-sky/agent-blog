@@ -5,8 +5,8 @@
         SELECT id, event, status, exe_time, detail, create_time
         FROM blog_log
         <where>
-            <if test="keyword != null and keyword != ''">
-                AND (event LIKE CONCAT('%', #{keyword}, '%') OR detail LIKE CONCAT('%', #{keyword}, '%'))
+            <if test="logStatus != null and logStatus != ''">
+                AND status = #{logStatus}
             </if>
         </where>
         ORDER BY id DESC
@@ -16,10 +16,14 @@
     <select id="countPage" resultType="long">
         SELECT COUNT(1) FROM blog_log
         <where>
-            <if test="keyword != null and keyword != ''">
-                AND (event LIKE CONCAT('%', #{keyword}, '%') OR detail LIKE CONCAT('%', #{keyword}, '%'))
+            <if test="logStatus != null and logStatus != ''">
+                AND status = #{logStatus}
             </if>
         </where>
+    </select>
+
+    <select id="countFailed" resultType="long">
+        SELECT COUNT(1) FROM blog_log WHERE status = '失败'
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">

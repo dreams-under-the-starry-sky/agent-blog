@@ -7,7 +7,6 @@ import ImageTiles from '@/components/ImageTiles.vue'
 import { PAGE_SIZE } from '@/utils/page'
 import { tableTime } from '@/utils/format'
 
-const keyword = ref('')
 const page = ref(1)
 const data = ref({ total: 0, list: [] as any[] })
 const cats = ref<any[]>([])
@@ -22,7 +21,7 @@ const form = reactive({
 })
 
 async function load() {
-  data.value = await adminApi.records({ page: page.value, size: PAGE_SIZE, keyword: keyword.value })
+  data.value = await adminApi.records({ page: page.value, size: PAGE_SIZE })
   cats.value = await adminApi.recordCategories()
 }
 function open(row?: any) {
@@ -54,13 +53,12 @@ onMounted(load)
 
 <template>
   <CrudPage
-    v-model:keyword="keyword"
     v-model:page="page"
     :rows="data.list"
     :total="data.total"
-    search-label="内容"
-    search-placeholder="请输入记录内容"
-    @search="load"
+    :show-keyword="false"
+    :show-search="false"
+    :show-reset="false"
     @page-change="load"
     @create="open()"
   >

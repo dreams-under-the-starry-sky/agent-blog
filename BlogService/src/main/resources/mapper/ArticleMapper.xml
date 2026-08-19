@@ -110,7 +110,7 @@
         SELECT a.id, a.title, a.create_time, a.pv, a.cover
         FROM blog_article a
         WHERE a.status = 1
-        ORDER BY a.create_time DESC
+        ORDER BY a.id DESC
         LIMIT #{limit}
     </select>
 
@@ -118,7 +118,7 @@
         SELECT a.id, a.title, a.pv, a.cover
         FROM blog_article a
         WHERE a.status = 1
-        ORDER BY a.pv DESC, a.create_time DESC
+        ORDER BY a.pv DESC, a.id DESC
         LIMIT #{limit}
     </select>
 
@@ -126,7 +126,7 @@
         SELECT a.id, a.title, a.create_time, a.year_time, a.month_time, a.pv, a.status
         FROM blog_article a
         WHERE IFNULL(a.status, 0) = 1
-        ORDER BY a.create_time DESC
+        ORDER BY a.id DESC
     </select>
 
     <select id="recountCategory" resultType="int">

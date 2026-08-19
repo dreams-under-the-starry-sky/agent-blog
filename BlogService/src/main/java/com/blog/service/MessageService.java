@@ -1,5 +1,7 @@
 package com.blog.service;
 
+import com.blog.common.BizException;
+import com.blog.common.ErrorCode;
 import com.blog.common.IdGenerator;
 import com.blog.common.PageQuery;
 import com.blog.common.PageResult;
@@ -15,18 +17,32 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class MessageService {
+    private static final Set<Integer> FRONT_PAGE_IDS = Set.of(36, 37);
+
     @Resource
     private MessageMapper messageMapper;
     @Resource
     private BlackMapper blackMapper;
     @Resource
     private IpLocationService ipLocationService;
+    @Resource
+    private FrontReplyLimitService frontReplyLimitService;
 
-    public List<Message> treeVisible() {
-        return toTree(messageMapper.selectVisible());
+    public PageResult<Message> treeVisiblePage(Integer pageId, PageQuery query) {
+        if (pageId == null) {
+            return new PageResult<>(0, List.of());
+        }
+        List<Message> roots = toTree(messageMapper.selectVisibleByPageId(pageId));
+        int from = query.getOffset();
+        if (from >= roots.size()) {
+            return new PageResult<>(roots.size(), List.of());
+        }
+        int to = Math.min(from + query.getLimit(), roots.size());
+        return new PageResult<>(roots.size(), new ArrayList<>(roots.subList(from, to)));
     }
 
     public PageResult<Message> page(PageQuery query) {
@@ -34,17 +50,25 @@ public class MessageService {
     }
 
     public void submit(MessageSubmitRequest req, HttpServletRequest request, boolean asBlogger) {
-        CommentService.validateSubmit(req.getNickname(), req.getEmail(), req.getContent());
         String ip = CommentService.clientIp(request);
         if (blackMapper.countMatch(ip, req.getNickname(), req.getEmail()) > 0) {
-            throw new com.blog.common.BizException("当前用户已被限制发言");
+            throw new BizException(ErrorCode.USER_BLACKLISTED);
+        }
+        if (!asBlogger) {
+            frontReplyLimitService.assertAllowed(request, req.getNickname(), req.getEmail());
         }
         Message message = new Message();
         message.setId(IdGenerator.nextId());
-        message.setPageId(req.getPageId() == null ? 1 : req.getPageId());
         message.setContent(req.getContent());
         message.setBlogger(asBlogger ? 1 : 0);
         fillReplyMeta(message, req.getParentId());
+        if (message.getPageId() == null) {
+            Integer pageId = req.getPageId();
+            if (pageId == null || (!asBlogger && !FRONT_PAGE_IDS.contains(pageId))) {
+                throw new BizException(ErrorCode.MESSAGE_PAGE_INVALID);
+            }
+            message.setPageId(pageId);
+        }
         message.setNickname(CommentService.trim(req.getNickname(), 20));
         message.setEmail(CommentService.trim(req.getEmail(), 30));
         message.setWebsite(CommentService.trim(req.getWebsite(), 50));
@@ -85,11 +109,12 @@ public class MessageService {
         }
         Message parent = messageMapper.selectById(parentId);
         if (parent == null) {
-            throw new com.blog.common.BizException("回复的留言不存在");
+            throw new BizException(ErrorCode.MESSAGE_PARENT_NOT_FOUND);
         }
         message.setParentId(parent.getId());
         message.setParentNickname(parent.getNickname());
         message.setRootId(parent.getRootId() != null ? parent.getRootId() : parent.getId());
+        message.setPageId(parent.getPageId());
     }
 
     private List<Message> toTree(List<Message> list) {

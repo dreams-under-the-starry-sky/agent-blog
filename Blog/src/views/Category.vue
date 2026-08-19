@@ -148,7 +148,7 @@ onMounted(async () => {
 h2 {
   margin: 0;
   text-align: center;
-  font-size: 1.75rem;
+  font-size: calc(1.75rem + 2px);
   color: var(--c-text-1);
 }
 
@@ -164,7 +164,7 @@ h2 {
   background: transparent;
   color: var(--c-text-1);
   font: inherit;
-  font-size: 1.15rem;
+  font-size: calc(1.15rem + 2px);
   cursor: pointer;
   text-align: left;
 }
@@ -198,7 +198,7 @@ em {
   border: 1px solid var(--line-divider);
   background: var(--card-bg);
   color: var(--btn-content);
-  font-size: 1rem;
+  font-size: calc(1rem + 2px);
   line-height: 1;
 }
 

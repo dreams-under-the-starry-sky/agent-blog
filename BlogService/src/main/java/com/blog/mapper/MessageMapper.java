@@ -11,6 +11,8 @@ import java.util.List;
 public interface MessageMapper {
     List<Message> selectVisible();
 
+    List<Message> selectVisibleByPageId(@Param("pageId") Integer pageId);
+
     List<Message> selectPage(PageQuery query);
 
     long countPage(PageQuery query);
@@ -26,4 +28,8 @@ public interface MessageMapper {
     int deleteById(@Param("id") Long id);
 
     long countAll();
+
+    int countByIpSince(@Param("ip") String ip, @Param("start") java.time.LocalDateTime start);
+
+    int countByEmailSince(@Param("email") String email, @Param("start") java.time.LocalDateTime start);
 }

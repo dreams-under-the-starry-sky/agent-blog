@@ -1,12 +1,12 @@
 package com.blog.service;
 
 import com.blog.common.BizException;
+import com.blog.common.ErrorCode;
 import com.blog.common.IdGenerator;
 import com.blog.entity.WebUpdateLog;
 import com.blog.mapper.WebUpdateLogMapper;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -22,9 +22,6 @@ public class WebUpdateLogService {
     }
 
     public Long save(WebUpdateLog log) {
-        if (!StringUtils.hasText(log.getTitle())) {
-            throw new BizException("标题不能为空");
-        }
         log.setTitle(log.getTitle().trim());
         String description = log.getDescription() == null ? "" : log.getDescription().trim();
         log.setDescription(description.length() > 500 ? description.substring(0, 500) : description);

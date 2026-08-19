@@ -1,6 +1,7 @@
 package com.blog.service;
 
 import com.blog.common.BizException;
+import com.blog.common.ErrorCode;
 import com.blog.common.IdGenerator;
 import com.blog.common.PageQuery;
 import com.blog.common.PageResult;
@@ -19,7 +20,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 @Service
 public class CommentService {
@@ -31,6 +31,8 @@ public class CommentService {
     private BlackMapper blackMapper;
     @Resource
     private IpLocationService ipLocationService;
+    @Resource
+    private FrontReplyLimitService frontReplyLimitService;
 
     public List<Comment> treeByArticle(Long articleId) {
         return toTree(commentMapper.selectByArticleId(articleId));
@@ -41,16 +43,18 @@ public class CommentService {
     }
 
     public void submit(CommentSubmitRequest req, HttpServletRequest request, boolean asBlogger) {
-        validateSubmit(req.getNickname(), req.getEmail(), req.getContent());
         Article article = articleMapper.selectById(req.getArticleId());
         if (article == null) {
-            throw new BizException("文章不存在");
+            throw new BizException(ErrorCode.ARTICLE_NOT_FOUND);
         }
         if (!asBlogger && !Integer.valueOf(1).equals(article.getComment())) {
-            throw new BizException("该文章未开放评论");
+            throw new BizException(ErrorCode.COMMENT_CLOSED);
         }
         String ip = clientIp(request);
         assertNotBlacklisted(ip, req.getNickname(), req.getEmail());
+        if (!asBlogger) {
+            frontReplyLimitService.assertAllowed(request, req.getNickname(), req.getEmail());
+        }
         Comment comment = new Comment();
         comment.setId(IdGenerator.nextId());
         comment.setArticleId(req.getArticleId());
@@ -98,7 +102,7 @@ public class CommentService {
 
     private void assertNotBlacklisted(String ip, String nickname, String email) {
         if (blackMapper.countMatch(ip, nickname, email) > 0) {
-            throw new BizException("当前用户已被限制发言");
+            throw new BizException(ErrorCode.USER_BLACKLISTED);
         }
     }
 
@@ -109,7 +113,7 @@ public class CommentService {
         }
         Comment parent = commentMapper.selectById(parentId);
         if (parent == null) {
-            throw new BizException("回复的评论不存在");
+            throw new BizException(ErrorCode.COMMENT_PARENT_NOT_FOUND);
         }
         comment.setParentId(parent.getId());
         comment.setParentNickname(parent.getNickname());
@@ -144,26 +148,6 @@ public class CommentService {
             }
         }
         return roots;
-    }
-
-    private static final Pattern EMAIL = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
-
-    public static void validateSubmit(String nickname, String email, String content) {
-        if (!StringUtils.hasText(nickname)) {
-            throw new BizException("请填写昵称");
-        }
-        if (nickname.trim().length() > 20) {
-            throw new BizException("昵称不能超过20个字符");
-        }
-        if (StringUtils.hasText(email) && !EMAIL.matcher(email.trim()).matches()) {
-            throw new BizException("请填写正确的邮箱格式");
-        }
-        if (!StringUtils.hasText(content)) {
-            throw new BizException("请填写内容");
-        }
-        if (content.trim().length() > 255) {
-            throw new BizException("消息内容不能超过255个字符");
-        }
     }
 
     static boolean isTopLevel(Long parentId) {

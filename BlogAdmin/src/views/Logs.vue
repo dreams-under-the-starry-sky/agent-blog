@@ -1,36 +1,56 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { ElMessage } from 'element-plus'
 import { adminApi } from '@/api/admin'
 import CrudPage from '@/components/CrudPage.vue'
 import { PAGE_SIZE } from '@/utils/page'
 import { tableTime } from '@/utils/format'
 
-const keyword = ref('')
+const logStatus = ref('')
 const page = ref(1)
 const data = ref({ total: 0, list: [] as any[] })
 
 async function load() {
-  data.value = await adminApi.logs({ page: page.value, size: PAGE_SIZE, keyword: keyword.value })
+  data.value = await adminApi.logs({ page: page.value, size: PAGE_SIZE, logStatus: logStatus.value || undefined })
 }
+
+function resetFilters() {
+  logStatus.value = ''
+}
+
 onMounted(load)
 </script>
 
 <template>
   <CrudPage
-    v-model:keyword="keyword"
     v-model:page="page"
     :rows="data.list"
     :total="data.total"
-    search-label="事件"
-    search-placeholder="请输入事件或详情"
+    :show-keyword="false"
+    :show-create="false"
     @search="load"
+    @reset="resetFilters"
     @page-change="load"
-    @create="ElMessage.info('运行日志不支持新建')"
   >
+    <template #filters>
+      <span class="filter-label">状态</span>
+      <el-select v-model="logStatus" clearable placeholder="全部" class="filter-select">
+        <el-option label="成功" value="成功" />
+        <el-option label="失败" value="失败" />
+      </el-select>
+    </template>
     <el-table-column prop="event" label="事件" />
     <el-table-column prop="status" label="状态" />
     <el-table-column prop="detail" label="详情" />
     <el-table-column prop="createTime" label="时间" :formatter="tableTime" />
   </CrudPage>
 </template>
+
+<style scoped>
+.filter-label {
+  color: var(--el-text-color-regular);
+  font-size: 14px;
+}
+.filter-select {
+  width: 220px;
+}
+</style>

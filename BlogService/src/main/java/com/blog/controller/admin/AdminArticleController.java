@@ -2,7 +2,6 @@ package com.blog.controller.admin;
 
 import com.blog.common.PageQuery;
 import com.blog.common.PageResult;
-import com.blog.common.Result;
 import com.blog.dto.ArticleSaveRequest;
 import com.blog.dto.CommentSubmitRequest;
 import com.blog.entity.Article;
@@ -15,6 +14,7 @@ import com.blog.service.MetaService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,91 +38,91 @@ public class AdminArticleController {
     private CommentService commentService;
 
     @GetMapping("/articles")
-    public Result<PageResult<Article>> articles(PageQuery query) {
-        return Result.ok(articleService.page(query));
+    public ResponseEntity<PageResult<Article>> articles(PageQuery query) {
+        return ResponseEntity.ok(articleService.page(query));
     }
 
     @GetMapping("/articles/{id}")
-    public Result<Article> article(@PathVariable Long id) {
-        return Result.ok(articleService.detail(id, false));
+    public ResponseEntity<Article> article(@PathVariable Long id) {
+        return ResponseEntity.ok(articleService.detail(id, false));
     }
 
     @PostMapping("/articles")
-    public Result<Long> createArticle(@RequestBody ArticleSaveRequest req) {
+    public ResponseEntity<Long> createArticle(@Valid @RequestBody ArticleSaveRequest req) {
         req.setId(null);
-        return Result.ok(articleService.save(req));
+        return ResponseEntity.ok(articleService.save(req));
     }
 
     @PutMapping("/articles/{id}")
-    public Result<Long> updateArticle(@PathVariable Long id, @RequestBody ArticleSaveRequest req) {
+    public ResponseEntity<Long> updateArticle(@PathVariable Long id, @Valid @RequestBody ArticleSaveRequest req) {
         req.setId(id);
-        return Result.ok(articleService.save(req));
+        return ResponseEntity.ok(articleService.save(req));
     }
 
     @DeleteMapping("/articles/{id}")
-    public Result<Void> deleteArticle(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteArticle(@PathVariable Long id) {
         articleService.delete(id);
-        return Result.ok();
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/categories")
-    public Result<List<Category>> categories() {
-        return Result.ok(metaService.categories());
+    public ResponseEntity<List<Category>> categories() {
+        return ResponseEntity.ok(metaService.categories());
     }
 
     @PostMapping("/categories")
-    public Result<Long> saveCategory(@RequestBody Category category) {
-        return Result.ok(metaService.saveCategory(category));
+    public ResponseEntity<Long> saveCategory(@Valid @RequestBody Category category) {
+        return ResponseEntity.ok(metaService.saveCategory(category));
     }
 
     @DeleteMapping("/categories/{id}")
-    public Result<Void> deleteCategory(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
         metaService.deleteCategory(id);
-        return Result.ok();
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/tags")
-    public Result<List<Tag>> tags() {
-        return Result.ok(metaService.tags());
+    public ResponseEntity<List<Tag>> tags() {
+        return ResponseEntity.ok(metaService.tags());
     }
 
     @PostMapping("/tags")
-    public Result<Long> saveTag(@RequestBody Tag tag) {
-        return Result.ok(metaService.saveTag(tag));
+    public ResponseEntity<Long> saveTag(@Valid @RequestBody Tag tag) {
+        return ResponseEntity.ok(metaService.saveTag(tag));
     }
 
     @DeleteMapping("/tags/{id}")
-    public Result<Void> deleteTag(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteTag(@PathVariable Long id) {
         metaService.deleteTag(id);
-        return Result.ok();
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/comments")
-    public Result<PageResult<Comment>> comments(PageQuery query) {
-        return Result.ok(commentService.page(query));
+    public ResponseEntity<PageResult<Comment>> comments(PageQuery query) {
+        return ResponseEntity.ok(commentService.page(query));
     }
 
     @PostMapping("/comments")
-    public Result<Void> replyComment(@Valid @RequestBody CommentSubmitRequest req, HttpServletRequest request) {
+    public ResponseEntity<Void> replyComment(@Valid @RequestBody CommentSubmitRequest req, HttpServletRequest request) {
         commentService.submit(req, request, true);
-        return Result.ok();
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping("/comments/{id}/handle")
-    public Result<Void> handleComment(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
+    public ResponseEntity<Void> handleComment(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
         commentService.handle(id, body.get("handle"));
-        return Result.ok();
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping("/comments/{id}/visible")
-    public Result<Void> visibleComment(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
+    public ResponseEntity<Void> visibleComment(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
         commentService.visible(id, body.get("visible"));
-        return Result.ok();
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/comments/{id}")
-    public Result<Void> deleteComment(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteComment(@PathVariable Long id) {
         commentService.delete(id);
-        return Result.ok();
+        return ResponseEntity.ok().build();
     }
 }

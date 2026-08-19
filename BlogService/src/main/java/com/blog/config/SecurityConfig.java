@@ -1,5 +1,6 @@
 package com.blog.config;
 
+import com.blog.common.ErrorCode;
 import com.blog.security.JwtAuthFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -48,9 +49,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").authenticated()
                         .anyRequest().permitAll())
                 .exceptionHandling(e -> e.authenticationEntryPoint((req, res, ex) -> {
-                    res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    ErrorCode code = ErrorCode.PLEASE_LOGIN;
+                    res.setStatus(code.getStatus().value());
                     res.setContentType("application/json;charset=UTF-8");
-                    res.getWriter().write("{\"code\":401,\"message\":\"未登录或登录已过期\",\"data\":null}");
+                    res.getWriter().write("{\"code\":\"" + code.getCode() + "\",\"message\":\"" + code.getMessage() + "\"}");
                 }))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

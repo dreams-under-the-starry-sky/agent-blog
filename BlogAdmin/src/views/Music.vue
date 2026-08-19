@@ -3,12 +3,14 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { adminApi } from '@/api/admin'
 import CrudPage from '@/components/CrudPage.vue'
-import { filterPage } from '@/utils/page'
+import { PAGE_SIZE } from '@/utils/page'
 import { tableTime } from '@/utils/format'
 
 const all = ref<any[]>([])
 const keyword = ref('')
-const applied = ref('')
+const author = ref('')
+const appliedName = ref('')
+const appliedAuthor = ref('')
 const page = ref(1)
 const visible = ref(false)
 const form = reactive({
@@ -19,14 +21,32 @@ const form = reactive({
   cover: '',
   lrc: '',
 })
-const view = computed(() => filterPage(all.value, applied.value, page.value, ['name', 'author', 'url']))
+const view = computed(() => {
+  const nameKw = appliedName.value.trim().toLowerCase()
+  const authorKw = appliedAuthor.value.trim().toLowerCase()
+  const filtered = all.value.filter((item) => {
+    if (nameKw && !String(item.name ?? '').toLowerCase().includes(nameKw)) return false
+    if (authorKw && !String(item.author ?? '').toLowerCase().includes(authorKw)) return false
+    return true
+  })
+  const start = (Math.max(page.value, 1) - 1) * PAGE_SIZE
+  return {
+    total: filtered.length,
+    rows: filtered.slice(start, start + PAGE_SIZE),
+  }
+})
 
 async function load() {
   all.value = await adminApi.music()
 }
 
 function applySearch() {
-  applied.value = keyword.value
+  appliedName.value = keyword.value
+  appliedAuthor.value = author.value
+}
+
+function resetFilters() {
+  author.value = ''
 }
 
 function open(row?: any) {
@@ -88,10 +108,21 @@ onMounted(load)
     :rows="view.rows"
     :total="view.total"
     search-label="歌名"
-    search-placeholder="请输入歌名或作者"
+    search-placeholder="请输入歌名"
     @search="applySearch"
+    @reset="resetFilters"
     @create="open()"
   >
+    <template #filters>
+      <span class="filter-label">作者</span>
+      <el-input
+        v-model="author"
+        clearable
+        placeholder="请输入作者"
+        class="author-input"
+        @keyup.enter="applySearch"
+      />
+    </template>
     <el-table-column prop="name" label="歌名" />
     <el-table-column prop="author" label="作者" />
     <el-table-column prop="url" label="地址" show-overflow-tooltip />
@@ -118,3 +149,13 @@ onMounted(load)
     </template>
   </CrudPage>
 </template>
+
+<style scoped>
+.filter-label {
+  color: var(--el-text-color-regular);
+  font-size: 14px;
+}
+.author-input {
+  width: 220px;
+}
+</style>

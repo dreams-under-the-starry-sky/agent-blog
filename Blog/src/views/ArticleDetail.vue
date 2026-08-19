@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router'
 import Bookmark from '@vicons/tabler/es/Bookmark'
 import Calendar from '@vicons/tabler/es/Calendar'
 import { frontApi } from '@/api/front'
-import type { Article, Comment } from '@/api/types'
+import type { Article } from '@/api/types'
 import CommentTree from '@/components/CommentTree.vue'
 import MarkdownBody from '@/components/MarkdownBody.vue'
 import { formatDate, mediaUrl } from '@/utils/format'
@@ -13,8 +13,7 @@ import { usePageReady } from '@/utils/pageReady'
 
 const route = useRoute()
 const article = ref<Article | null>(null)
-const comments = ref<Comment[]>([])
-const rendered = computed(() => renderArticle(article.value?.content))
+const rendered = computed(() => renderArticle(article.value?.content, article.value?.images))
 const html = computed(() => rendered.value.html)
 const tocHeadings = inject<Ref<Heading[]>>('tocHeadings')
 const beginReady = usePageReady()
@@ -22,9 +21,7 @@ const beginReady = usePageReady()
 async function load() {
   const pageReady = beginReady()
   try {
-    const id = String(route.params.id)
-    article.value = await frontApi.article(id)
-    comments.value = await frontApi.comments(id)
+    article.value = await frontApi.article(String(route.params.id))
   } finally {
     pageReady()
   }
@@ -43,7 +40,7 @@ onUnmounted(() => {
 
 <template>
   <article v-if="article" class="post">
-    <img v-if="article.cover" class="cover" :src="mediaUrl(article.cover)" :alt="article.title" />
+    <img v-if="article.cover || article.thumbnail" class="cover" :src="mediaUrl(article.thumbnail || article.cover)" :alt="article.title" />
     <h1>{{ article.title }}</h1>
     <div class="meta">
       <time>
@@ -54,12 +51,7 @@ onUnmounted(() => {
       </span>
     </div>
     <MarkdownBody :html="html" />
-    <CommentTree
-      v-if="article.comment === 1"
-      :article-id="article.id"
-      :comments="comments"
-      @refresh="load"
-    />
+    <CommentTree v-if="article.comment === 1" :article-id="article.id" />
     <el-alert v-else title="本文未开放评论" type="info" :closable="false" />
   </article>
 </template>
@@ -67,7 +59,7 @@ onUnmounted(() => {
 <style scoped lang="scss">
 h1 {
   margin: 0 0 0.75rem;
-  font-size: 2.15rem;
+  font-size: calc(2.15rem + 2px);
   text-align: center;
   color: var(--c-text-1);
 }
@@ -86,7 +78,7 @@ h1 {
   justify-content: center;
   color: var(--c-text-2);
   margin-bottom: 1.5rem;
-  font-size: 0.95rem;
+  font-size: calc(0.95rem + 2px);
 }
 time,
 .cat {

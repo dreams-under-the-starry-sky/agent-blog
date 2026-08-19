@@ -11,3 +11,17 @@ blog:
     reset-password: ""
   map:
     qq-key: ""
+  storage:
+    type: local
+  cos:
+    secret-id: ""
+    secret-key: ""
+    bucket: ""
+    region: ""
+    cdn-domain: ""
+  qiniu:
+    access-key: ""
+    secret-key: ""
+    bucket: ""
+    region: auto
+    cdn-domain: ""

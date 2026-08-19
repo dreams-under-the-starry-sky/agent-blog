@@ -46,7 +46,7 @@ onMounted(async () => {
 </template>
 
 <style scoped lang="scss">
-h2 { font-size: 1rem; color: var(--btn-content); }
+h2 { font-size: calc(1rem + 2px); color: var(--btn-content); }
 .row {
   display: flex;
   gap: 1rem;

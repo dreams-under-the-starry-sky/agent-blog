@@ -59,12 +59,12 @@ onMounted(async () => {
 }
 h2 {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: calc(1.15rem + 2px);
   color: var(--c-text-1);
 }
 time {
   color: var(--c-text-3);
-  font-size: 0.85rem;
+  font-size: calc(0.85rem + 2px);
 }
 p {
   margin: 0.55rem 0 0;

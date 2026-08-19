@@ -28,4 +28,8 @@ public interface CommentMapper {
     long countAll();
 
     List<Comment> selectRecent(@Param("limit") int limit);
+
+    int countByIpSince(@Param("ip") String ip, @Param("start") java.time.LocalDateTime start);
+
+    int countByEmailSince(@Param("email") String email, @Param("start") java.time.LocalDateTime start);
 }

@@ -7,5 +7,21 @@ export const siteConfig = {
   startDate: '2026-01-01',
 }
 
+/** 前台各页 pageId；目前仅留言板、友链开放 blog_message 评论 */
+export const PAGE_IDS = {
+  home: 10,
+  category: 11,
+  tag: 12,
+  archive: 13,
+  essays: 14,
+  records: 15,
+  about: 16,
+  friends: 36,
+  messages: 37,
+} as const
+
+export const COMMENTABLE_PAGE_IDS = [PAGE_IDS.friends, PAGE_IDS.messages] as const
+
 export const PAGE_SIZE = 8
 export const PAGE_WIDTH = '75rem'
+export const BLOGGER_EMAIL = '1762546812@qq.com'

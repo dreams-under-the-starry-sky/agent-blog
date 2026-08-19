@@ -64,8 +64,8 @@ onMounted(async () => {
   margin: 0.25rem auto 0.75rem;
   display: block;
 }
-h2 { margin: 0; font-size: 1.2rem; color: var(--c-text-1); }
-.bio { margin: 0.5rem 0 0.75rem; color: var(--c-text-2); font-size: 0.85rem; }
+h2 { margin: 0; font-size: calc(1.2rem + 2px); color: var(--c-text-1); }
+.bio { margin: 0.5rem 0 0.75rem; color: var(--c-text-2); font-size: calc(0.85rem + 2px); }
 .github {
   display: inline-flex;
   align-items: center;
@@ -74,7 +74,7 @@ h2 { margin: 0; font-size: 1.2rem; color: var(--c-text-1); }
   border-radius: 999px;
   background: var(--btn-regular-bg);
   color: var(--btn-content);
-  font-size: 0.85rem;
+  font-size: calc(0.85rem + 2px);
   transition: background 0.18s ease, color 0.18s ease;
 }
 
@@ -84,7 +84,7 @@ h2 { margin: 0; font-size: 1.2rem; color: var(--c-text-1); }
 }
 h3 {
   margin: 0 0 0.75rem;
-  font-size: 0.9rem;
+  font-size: calc(0.9rem + 2px);
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -92,14 +92,14 @@ h3 {
 }
 .music { overflow: visible; }
 .music h3 {
-  font-size: 1.05rem;
+  font-size: calc(1.05rem + 2px);
   :deep(.tabler-icon) { width: 1.3rem; height: 1.3rem; }
 }
 .stat {
   display: flex;
   justify-content: space-between;
   padding: 0.4rem 0;
-  font-size: 0.9rem;
+  font-size: calc(0.9rem + 2px);
   color: var(--c-text-2);
 }
 </style>
