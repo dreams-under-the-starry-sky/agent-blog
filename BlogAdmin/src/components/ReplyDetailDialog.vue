@@ -8,16 +8,19 @@ const reply = defineModel<string>('reply', { default: '' })
 const props = defineProps<{
   row: any | null
   kind: 'comment' | 'message'
+  mode: 'view' | 'review'
 }>()
 
-const emit = defineEmits<{ submit: [] }>()
-
-const hidden = computed(() => props.row?.visible === 0)
+const emit = defineEmits<{
+  submit: []
+  approve: []
+  reject: []
+}>()
 
 const title = computed(() => {
   const name = props.kind === 'comment' ? '评论' : '留言'
-  if (hidden.value) return `查看${name}`
-  return props.row?.handle === 1 ? `查看${name}` : `回复${name}`
+  if (props.mode === 'review') return `处理${name}`
+  return `查看${name}`
 })
 
 function yesNo(value?: number) {
@@ -35,7 +38,7 @@ function region(row: any) {
       <el-descriptions-item label="昵称">{{ row.nickname || '—' }}</el-descriptions-item>
       <el-descriptions-item label="邮箱">{{ row.email || '—' }}</el-descriptions-item>
       <el-descriptions-item v-if="kind === 'comment'" label="文章">{{ row.articleTitle || '—' }}</el-descriptions-item>
-      <el-descriptions-item label="回复对象" :span="kind === 'comment' ? 1 : 2">{{ row.parentNickname || '—' }}</el-descriptions-item>
+      <el-descriptions-item label="回复对象" :span="kind === 'comment' ? 1 : 2">{{ row.parentNickname || '博主' }}</el-descriptions-item>
       <el-descriptions-item label="时间" :span="2">{{ formatTime(row.createTime) || '—' }}</el-descriptions-item>
       <el-descriptions-item label="IP">{{ row.ip || '—' }}</el-descriptions-item>
       <el-descriptions-item label="地区">{{ region(row) }}</el-descriptions-item>
@@ -49,13 +52,17 @@ function region(row: any) {
         <span class="content">{{ row.content || '—' }}</span>
       </el-descriptions-item>
     </el-descriptions>
-    <div v-if="!hidden" class="reply-box">
+    <div v-if="mode === 'review'" class="reply-box">
       <p class="label">回复内容</p>
       <el-input v-model="reply" type="textarea" :rows="4" placeholder="请输入回复内容" />
     </div>
     <template #footer>
-      <el-button @click="open = false">{{ hidden ? '关闭' : '取消' }}</el-button>
-      <el-button v-if="!hidden" type="primary" @click="emit('submit')">发送</el-button>
+      <el-button @click="open = false">{{ mode === 'view' ? '关闭' : '取消' }}</el-button>
+      <template v-if="mode === 'review'">
+        <el-button type="danger" @click="emit('reject')">不通过</el-button>
+        <el-button type="primary" @click="emit('approve')">通过</el-button>
+        <el-button type="primary" @click="emit('submit')">回复</el-button>
+      </template>
     </template>
   </el-dialog>
 </template>

@@ -65,6 +65,7 @@ export const menus: MenuGroup[] = [
       { path: '/web-update-logs', label: '功能日志' },
       { path: '/music', label: '音乐' },
       { path: '/logs', label: '运行日志' },
+      { path: '/email-fails', label: '失败邮件' },
     ],
   },
 ]

@@ -4,6 +4,7 @@ import com.blog.common.PageQuery;
 import com.blog.common.PageResult;
 import com.blog.dto.ArticleSaveRequest;
 import com.blog.dto.CommentSubmitRequest;
+import com.blog.dto.ReviewRequest;
 import com.blog.entity.Article;
 import com.blog.entity.Category;
 import com.blog.entity.Comment;
@@ -111,6 +112,12 @@ public class AdminArticleController {
     @PutMapping("/comments/{id}/handle")
     public ResponseEntity<Void> handleComment(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
         commentService.handle(id, body.get("handle"));
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/comments/{id}/review")
+    public ResponseEntity<Void> reviewComment(@PathVariable Long id, @Valid @RequestBody ReviewRequest req) {
+        commentService.review(id, Boolean.TRUE.equals(req.getApproved()));
         return ResponseEntity.ok().build();
     }
 

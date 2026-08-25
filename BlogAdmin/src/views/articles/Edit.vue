@@ -128,7 +128,9 @@ onMounted(async () => {
     <template #header>{{ form.id ? '编辑文章' : '写文章' }}</template>
     <el-form label-width="90px">
       <el-form-item label="标题"><el-input v-model="form.title" /></el-form-item>
-      <el-form-item label="摘要"><el-input v-model="form.description" /></el-form-item>
+      <el-form-item label="摘要">
+        <el-input v-model="form.description" maxlength="80" show-word-limit placeholder="不填则取正文开头" />
+      </el-form-item>
       <el-row :gutter="16">
         <el-col :span="12">
           <el-form-item label="分类">

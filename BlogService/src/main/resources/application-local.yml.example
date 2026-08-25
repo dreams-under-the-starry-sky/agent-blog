@@ -3,6 +3,9 @@ spring:
     url: jdbc:mysql://127.0.0.1:3306/blogtest?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: your-db-username
     password: your-db-password
+  mail:
+    username: your-qq-email@qq.com
+    password: your-qq-smtp-auth-code
 
 blog:
   jwt:
@@ -11,6 +14,8 @@ blog:
     reset-password: ""
   map:
     qq-key: ""
+  uapi:
+    token: ""
   storage:
     type: local
   cos:
@@ -25,3 +30,7 @@ blog:
     bucket: ""
     region: auto
     cdn-domain: ""
+  site:
+    title: your-blog-name
+    msg-avatar: your-blog-avatar-url
+    site-url: your-blog-url

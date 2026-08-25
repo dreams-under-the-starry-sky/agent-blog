@@ -1,0 +1,157 @@
+package com.blog.service;
+
+import com.blog.common.BizException;
+import com.blog.common.ErrorCode;
+import com.blog.dto.QqInfoVO;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.net.URI;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
+
+@Service
+public class QqInfoService {
+    private static final Logger log = LoggerFactory.getLogger(QqInfoService.class);
+    private static final Pattern QQ_PATTERN = Pattern.compile("^[1-9]\\d{4,10}$");
+    private static final int DAILY_LIMIT = 100;
+    private static final long IP_INTERVAL_MS = 15_000;
+    private final ConcurrentHashMap<String, Long> lastQueryByIp = new ConcurrentHashMap<>();
+
+    @Resource
+    private RestTemplate restTemplate;
+    @Resource
+    private ObjectMapper objectMapper;
+    @Resource
+    private DailyQuotaService dailyQuotaService;
+    @Resource
+    private LogService logService;
+
+    @Value("${blog.uapi.token:}")
+    private String uapiToken;
+    @Value("${blog.uapi.qq-userinfo-url:}")
+    private String qqUserinfoUrl;
+    @Value("${blog.uapi.qq-avatar-url:}")
+    private String qqAvatarUrl;
+
+    public QqInfoVO lookup(String raw, HttpServletRequest request) {
+        String qq = raw == null ? "" : raw.trim();
+        if (!QQ_PATTERN.matcher(qq).matches()) {
+            throw new BizException(ErrorCode.PARAM_INVALID);
+        }
+        assertIpInterval(CommentService.clientIp(request));
+        if (!dailyQuotaService.tryAcquireQq(DAILY_LIMIT)) {
+            throw new BizException(ErrorCode.QQ_QUERY_LIMITED);
+        }
+        QqInfoVO info = new QqInfoVO();
+        info.setQq(qq);
+        if (StringUtils.hasText(qqAvatarUrl)) {
+            info.setAvatar(qqAvatarUrl.replace("{qq}", qq));
+        }
+        info.setEmail(qq + "@qq.com");
+        fillFromUapi(qq, info);
+        return info;
+    }
+
+    private void assertIpInterval(String ip) {
+        String key = StringUtils.hasText(ip) ? ip : "unknown";
+        long now = System.currentTimeMillis();
+        AtomicBoolean allowed = new AtomicBoolean(false);
+        lastQueryByIp.compute(key, (ignored, prev) -> {
+            if (prev != null && now - prev < IP_INTERVAL_MS) {
+                return prev;
+            }
+            allowed.set(true);
+            return now;
+        });
+        pruneStaleQueries(now);
+        if (!allowed.get()) {
+            throw new BizException(ErrorCode.QQ_QUERY_TOO_FREQUENT);
+        }
+    }
+
+    private void pruneStaleQueries(long now) {
+        if (lastQueryByIp.size() < 512) {
+            return;
+        }
+        long cutoff = now - IP_INTERVAL_MS;
+        lastQueryByIp.entrySet().removeIf(entry -> entry.getValue() < cutoff);
+    }
+
+    private void fillFromUapi(String qq, QqInfoVO info) {
+        if (!StringUtils.hasText(uapiToken) || !StringUtils.hasText(qqUserinfoUrl)) {
+            log.warn("UAPI 未配置完整，跳过 QQ 资料查询");
+            return;
+        }
+        try {
+            URI uri = UriComponentsBuilder.fromUriString(qqUserinfoUrl.trim())
+                    .queryParam("qq", qq)
+                    .encode()
+                    .build()
+                    .toUri();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(uapiToken);
+            ResponseEntity<String> response = restTemplate.exchange(
+                    uri, HttpMethod.GET, new HttpEntity<>(headers), String.class);
+            JsonNode node = parseUser(response.getBody());
+            if (node == null) {
+                logService.recordFail("查询QQ信息", "qq=" + qq + " 响应为空");
+                return;
+            }
+            String nickname = text(node, "nickname");
+            if (StringUtils.hasText(nickname)) {
+                info.setNickname(nickname.length() > 20 ? nickname.substring(0, 20) : nickname);
+            }
+            String avatar = text(node, "avatar_url");
+            if (StringUtils.hasText(avatar)) {
+                info.setAvatar(avatar.startsWith("http://") ? "https://" + avatar.substring(7) : avatar);
+            }
+            String email = text(node, "email");
+            if (StringUtils.hasText(email)) {
+                info.setEmail(email);
+            }
+        } catch (Exception e) {
+            log.warn("查询 QQ 资料失败", e);
+            logService.recordFail("查询QQ信息", "qq=" + qq, e);
+        }
+    }
+
+    private JsonNode parseUser(String body) {
+        if (!StringUtils.hasText(body)) {
+            return null;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(body);
+            if (root.has("nickname") || root.has("avatar_url")) {
+                return root;
+            }
+            JsonNode data = root.path("data");
+            if (data.isObject() && (data.has("nickname") || data.has("avatar_url"))) {
+                return data;
+            }
+            return null;
+        } catch (Exception e) {
+            log.warn("解析 QQ 资料失败");
+            return null;
+        }
+    }
+
+    private static String text(JsonNode node, String field) {
+        String value = node.path(field).asText("").trim();
+        return StringUtils.hasText(value) ? value : null;
+    }
+}

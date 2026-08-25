@@ -7,7 +7,7 @@ import type { Message } from '@/api/types'
 import CommentForm from '@/components/CommentForm.vue'
 import CommentList from '@/components/CommentList.vue'
 import FramePager from '@/components/FramePager.vue'
-import { clearCommentForm, validateCommentInput } from '@/utils/comment'
+import { clearCommentForm, emptyCommentForm, validateCommentInput } from '@/utils/comment'
 import { useLazyVisible } from '@/utils/lazyVisible'
 
 const PAGE_SIZE = 10
@@ -21,11 +21,11 @@ const loaded = ref(false)
 const loading = ref(false)
 const paging = ref<'prev' | 'next' | null>(null)
 const replyTo = ref<number | null>(null)
-const form = reactive({ nickname: '', email: '', website: '', content: '' })
+const form = reactive(emptyCommentForm())
 
 function countVisible(items?: Message[]): number {
   return (items || []).reduce((sum, item) => {
-    if (item.visible === 0) return sum
+    if (item.visible === 0 || item.handle === 0) return sum
     return sum + 1 + countVisible(item.children)
   }, 0)
 }
@@ -76,9 +76,11 @@ async function submit(parentId?: number | null) {
     nickname: form.nickname,
     email: form.email,
     website: form.website,
+    avatar: form.avatar,
+    notice: form.notice ? 1 : 0,
     content: form.content,
   })
-  ElMessage.success('留言成功')
+  ElMessage.success('留言成功，请等待博主审核！')
   clearCommentForm(form)
   replyTo.value = null
   await load()

@@ -5,6 +5,13 @@ import { ElMessage } from 'element-plus'
 const props = defineProps<{ html: string }>()
 const root = ref<HTMLElement | null>(null)
 const preview = ref('')
+const copyTimers: number[] = []
+
+function clearCopyTimers() {
+  while (copyTimers.length) {
+    window.clearTimeout(copyTimers.pop())
+  }
+}
 
 function enhance() {
   const el = root.value
@@ -28,10 +35,10 @@ function enhance() {
         btn.innerHTML = checkSvg
         btn.classList.add('copied')
         ElMessage.success('已复制')
-        window.setTimeout(() => {
+        copyTimers.push(window.setTimeout(() => {
           btn.innerHTML = copySvg
           btn.classList.remove('copied')
-        }, 1200)
+        }, 1200))
       } catch {
         ElMessage.error('复制失败')
       }
@@ -45,6 +52,7 @@ function enhance() {
 async function apply() {
   await nextTick()
   if (!root.value) return
+  clearCopyTimers()
   root.value.innerHTML = props.html || ''
   enhance()
 }
@@ -79,6 +87,7 @@ watch(preview, (value) => {
 })
 
 onBeforeUnmount(() => {
+  clearCopyTimers()
   document.removeEventListener('keydown', onKey)
   document.body.style.overflow = ''
 })

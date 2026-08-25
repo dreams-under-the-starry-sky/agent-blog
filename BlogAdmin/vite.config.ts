@@ -4,14 +4,32 @@ import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
   base: '/blog-manager/',
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    {
+      name: 'redirect-blog-manager',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          const url = req.url || ''
+          if (url === '/blog-manager' || url.startsWith('/blog-manager?')) {
+            const query = url.includes('?') ? url.slice(url.indexOf('?')) : ''
+            res.statusCode = 302
+            res.setHeader('Location', `/blog-manager/${query}`)
+            res.end()
+            return
+          }
+          next()
+        })
+      },
+    },
+  ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
   server: {
-    host: '0.0.0.0',
+    host: 'localhost',
     port: 5174,
     proxy: {
       '/api': {

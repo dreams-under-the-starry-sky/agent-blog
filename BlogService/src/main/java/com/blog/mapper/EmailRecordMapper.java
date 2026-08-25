@@ -11,4 +11,6 @@ public interface EmailRecordMapper {
     List<EmailRecord> selectPage(PageQuery query);
 
     long countPage(PageQuery query);
+
+    int insert(EmailRecord record);
 }

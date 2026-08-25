@@ -3,6 +3,7 @@ import { del, get, post, put } from './http'
 export const authApi = {
   login: (data: { username: string; password: string }) =>
     post<{ token: string; username: string; role: number }>('/api/auth/login', data),
+  session: () => get<void>('/api/admin/session'),
   updateUsername: (data: { username: string; password: string }) =>
     put<{ token: string; username: string; role: number }>('/api/admin/account/username', data),
   updatePassword: (data: { oldPassword: string; newPassword: string }) =>
@@ -35,11 +36,13 @@ export const adminApi = {
   comments: (params: object) => get<{ total: number; list: any[] }>('/api/admin/comments', params),
   replyComment: (data: object) => post('/api/admin/comments', data),
   handleComment: (id: number, handle: number) => put(`/api/admin/comments/${id}/handle`, { handle }),
+  reviewComment: (id: number, approved: boolean) => put(`/api/admin/comments/${id}/review`, { approved }),
   visibleComment: (id: number, visible: number) => put(`/api/admin/comments/${id}/visible`, { visible }),
   deleteComment: (id: number) => del(`/api/admin/comments/${id}`),
   messages: (params: object) => get<{ total: number; list: any[] }>('/api/admin/messages', params),
   replyMessage: (data: object) => post('/api/admin/messages', data),
   handleMessage: (id: number, handle: number) => put(`/api/admin/messages/${id}/handle`, { handle }),
+  reviewMessage: (id: number, approved: boolean) => put(`/api/admin/messages/${id}/review`, { approved }),
   visibleMessage: (id: number, visible: number) => put(`/api/admin/messages/${id}/visible`, { visible }),
   deleteMessage: (id: number) => del(`/api/admin/messages/${id}`),
   essays: (params: object) => get<{ total: number; list: any[] }>('/api/admin/essays', params),
@@ -68,6 +71,8 @@ export const adminApi = {
   saveWebUpdateLog: (data: object) => post('/api/admin/web-update-logs', data),
   deleteWebUpdateLog: (id: number) => del(`/api/admin/web-update-logs/${id}`),
   emails: (params: object) => get<{ total: number; list: any[] }>('/api/admin/emails', params),
+  emailFails: (params: object) => get<{ total: number; list: any[] }>('/api/admin/email-fails', params),
+  resendEmailFail: (id: number) => post(`/api/admin/email-fails/${id}/resend`),
   fileFails: () => get<any[]>('/api/admin/file-del-fails'),
   deleteFileFail: (id: number) => del(`/api/admin/file-del-fails/${id}`),
 }

@@ -68,7 +68,7 @@ onUnmounted(() => document.removeEventListener('pointerdown', onDocClick))
 
 <template>
   <header class="navbar">
-    <RouterLink to="/" class="brand">{{ siteConfig.title }}</RouterLink>
+    <RouterLink to="/" class="brand">{{ siteConfig.engTitle }}</RouterLink>
 
     <nav class="links">
       <RouterLink to="/" class="item" :class="{ on: active('/') }">首页</RouterLink>

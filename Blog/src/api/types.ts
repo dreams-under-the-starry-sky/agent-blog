@@ -49,6 +49,7 @@ export interface Comment {
   parentNickname?: string
   nickname?: string
   website?: string
+  avatar?: string
   createTime?: string
   articleTitle?: string
   handle?: number
@@ -69,6 +70,7 @@ export interface Message {
   parentNickname?: string
   nickname?: string
   website?: string
+  avatar?: string
   createTime?: string
   handle?: number
   visible?: number

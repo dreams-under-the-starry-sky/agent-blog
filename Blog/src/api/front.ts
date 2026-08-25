@@ -1,4 +1,4 @@
-import { get, post } from './http'
+import { get, getSilent, post } from './http'
 import type {
   Article,
   Category,
@@ -23,6 +23,7 @@ export const frontApi = {
   tags: () => get<Tag[]>('/api/front/tags'),
   sidebar: () => get<SidebarData>('/api/front/sidebar'),
   comments: (articleId: number | string) => get<Comment[]>('/api/front/comments', { articleId }),
+  qqInfo: (qq: string) => getSilent<{ nickname?: string; avatar?: string; email?: string }>('/api/front/qq-info', { qq }),
   submitComment: (data: object) => post<void>('/api/front/comments', data),
   messages: (pageId: number, params?: object) => get<PageResult<Message>>('/api/front/messages', { pageId, ...params }),
   submitMessage: (data: object) => post<void>('/api/front/messages', data),

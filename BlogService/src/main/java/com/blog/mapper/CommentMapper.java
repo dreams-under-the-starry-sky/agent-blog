@@ -23,6 +23,10 @@ public interface CommentMapper {
 
     int updateVisible(@Param("id") Long id, @Param("visible") Integer visible);
 
+    int updateReview(@Param("id") Long id, @Param("visible") Integer visible);
+
+    int updateSend(@Param("id") Long id);
+
     int deleteById(@Param("id") Long id);
 
     long countAll();

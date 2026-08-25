@@ -92,11 +92,17 @@ public class MiscService {
     }
 
     public Long saveFriend(Friend friend) {
+        if (friend.getCategoryId() != null) {
+            FriendCategory category = friendCategoryMapper.selectById(friend.getCategoryId());
+            if (category != null && category.getSort() != null) {
+                friend.setSort(category.getSort());
+            }
+        }
+        if (friend.getSort() == null) {
+            friend.setSort(99);
+        }
         if (friend.getId() == null) {
             friend.setId(IdGenerator.nextId());
-            if (friend.getSort() == null) {
-                friend.setSort(99);
-            }
             friendMapper.insert(friend);
         } else {
             friendMapper.update(friend);
@@ -226,12 +232,30 @@ public class MiscService {
         }
         String url = clipUrl(objectStorage.put(key, bytes, contentType(file, ext)));
         String thumbnailUrl = url;
+        if (isGif(ext, bytes)) {
+            return UploadResult.of(url, url);
+        }
         String avifName = ".avif".equals(ext) ? stem + "_t.avif" : stem + ".avif";
         byte[] avif = avifCompressor.compressToAvif(bytes);
         if (avif != null && avif.length > 0) {
             thumbnailUrl = clipUrl(objectStorage.put(objectKey(avifName), avif, "image/avif"));
         }
         return UploadResult.of(url, thumbnailUrl);
+    }
+
+    private static boolean isGif(String ext, byte[] bytes) {
+        if (".gif".equals(ext)) {
+            return true;
+        }
+        if (bytes == null || bytes.length < 6) {
+            return false;
+        }
+        return bytes[0] == 'G'
+                && bytes[1] == 'I'
+                && bytes[2] == 'F'
+                && bytes[3] == '8'
+                && (bytes[4] == '7' || bytes[4] == '9')
+                && bytes[5] == 'a';
     }
 
     public void tryDeleteFiles(String... urls) {

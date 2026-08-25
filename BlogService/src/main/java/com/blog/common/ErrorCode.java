@@ -54,6 +54,10 @@ public enum ErrorCode {
     POST_RATE_LIMITED(HttpStatus.FORBIDDEN, "323246", "今日发言次数已达上限，每天只能发言5次(●'◡'●)"),
     MESSAGE_PAGE_INVALID(HttpStatus.BAD_REQUEST, "323247", "留言页面无效"),
     EMAIL_BLOGGER_RESERVED(HttpStatus.BAD_REQUEST, "323249", "不能输入博主的邮箱"),
+    QQ_QUERY_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "323250", "今日 QQ 信息查询次数已达上限"),
+    QQ_QUERY_TOO_FREQUENT(HttpStatus.TOO_MANY_REQUESTS, "323251", "QQ 信息查询过于频繁，请稍后再试"),
+    EMAIL_FAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "323252", "失败邮件记录不存在"),
+    EMAIL_RESEND_FAILED(HttpStatus.BAD_GATEWAY, "323253", "邮件重发失败"),
 
     COS_CONFIG_INCOMPLETE(HttpStatus.INTERNAL_SERVER_ERROR, "323301", "对象存储配置不完整"),
     COS_UPLOAD_FAILED(HttpStatus.BAD_GATEWAY, "323302", "文件上传失败"),

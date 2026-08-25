@@ -2,23 +2,22 @@ package com.blog.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
-import java.time.Duration;
 
 @Service
 public class IpLocationService {
     private static final Logger log = LoggerFactory.getLogger(IpLocationService.class);
+    private static final int DAILY_LIMIT = 1000;
+
     public record Location(String province, String city, String district) {
         static Location empty() {
             return new Location(null, null, null);
@@ -27,35 +26,36 @@ public class IpLocationService {
 
     @Value("${blog.map.qq-key:}")
     private String qqKey;
+    @Value("${blog.map.ip-url:}")
+    private String ipUrl;
 
     @Resource
     private ObjectMapper objectMapper;
     @Resource
     private LogService logService;
-
-    private RestClient restClient;
-
-    @PostConstruct
-    void init() {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(Duration.ofSeconds(3));
-        factory.setReadTimeout(Duration.ofSeconds(3));
-        restClient = RestClient.builder().requestFactory(factory).build();
-    }
+    @Resource
+    private RestTemplate restTemplate;
+    @Resource
+    private DailyQuotaService dailyQuotaService;
 
     public Location lookup(String ip) {
         String queryIp = normalizeIp(ip);
-        if (!StringUtils.hasText(queryIp) || isPrivate(queryIp) || !StringUtils.hasText(qqKey)) {
+        if (!StringUtils.hasText(queryIp) || isPrivate(queryIp)
+                || !StringUtils.hasText(qqKey) || !StringUtils.hasText(ipUrl)) {
+            return Location.empty();
+        }
+        if (!dailyQuotaService.tryAcquireIp(DAILY_LIMIT)) {
+            log.warn("地理位置查询已达每日上限");
             return Location.empty();
         }
         try {
-            URI uri = UriComponentsBuilder.fromUriString("https://apis.map.qq.com/ws/location/v1/ip")
+            URI uri = UriComponentsBuilder.fromUriString(ipUrl.trim())
                     .queryParam("ip", queryIp)
                     .queryParam("key", qqKey)
                     .encode()
                     .build()
                     .toUri();
-            String json = restClient.get().uri(uri).retrieve().body(String.class);
+            String json = restTemplate.getForObject(uri, String.class);
             if (!StringUtils.hasText(json)) {
                 return Location.empty();
             }

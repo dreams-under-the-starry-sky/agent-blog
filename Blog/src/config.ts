@@ -1,10 +1,13 @@
 export const siteConfig = {
-  title: 'Crossroads',
+  title: '长路漫漫',
+  engTitle: 'Crossroads',
   subtitle: '朝花夕拾',
-  author: 'Crossroads',
+  author: '长路漫漫',
   bio: '记录技术、生活与沿途风景',
   github: 'https://github.com/dreams-under-the-starry-sky/agent-blog',
   startDate: '2026-01-01',
+  msgAvator: 'https://myqc.net.cn/blog/head-picture.jpg',
+  siteAvator: 'https://myqc.net.cn/blog/site-avatar.jpg'
 }
 
 /** 前台各页 pageId；目前仅留言板、友链开放 blog_message 评论 */

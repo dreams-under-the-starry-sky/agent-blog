@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
+import User from '@vicons/tabler/es/User'
+import { BLOGGER_EMAIL } from '@/config'
+import { frontApi } from '@/api/front'
 import { CONTENT_MAX, EMAIL_MAX, NICKNAME_MAX, validateCommentInput } from '@/utils/comment'
+import type { CommentFormModel } from '@/utils/comment'
 
-let form = defineModel<{
-  nickname: string
-  email: string
-  website: string
-  content: string
-}>({ required: true })
+const QQ_RE = /^[1-9]\d{4,10}$/
+const QQ_QUERY_INTERVAL_MS = 15000
+let lastQqQueryAt = 0
+
+let form = defineModel<CommentFormModel>({ required: true })
 
 withDefaults(defineProps<{
   placeholder?: string
@@ -20,6 +23,43 @@ withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{ submit: []; cancel: [] }>()
+
+async function onNicknameBlur() {
+  const qq = (form.value.nickname || '').trim()
+  if (!QQ_RE.test(qq)) return
+  const now = Date.now()
+  if (now - lastQqQueryAt < QQ_QUERY_INTERVAL_MS) {
+    ElMessage.warning('QQ 信息查询过于频繁，请稍后再试')
+    return
+  }
+  lastQqQueryAt = now
+  try {
+    const info = await frontApi.qqInfo(qq)
+    if (info.nickname) {
+      form.value.nickname = info.nickname
+    }
+    if (info.avatar) {
+      form.value.avatar = info.avatar
+    }
+    if (info.email && info.email.toLowerCase() !== BLOGGER_EMAIL.toLowerCase()) {
+      form.value.email = info.email
+    }
+  } catch (error: unknown) {
+    const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+    if (message) {
+      ElMessage.warning(message)
+    }
+    form.value.avatar = `https://q1.qlogo.cn/g?b=qq&nk=${qq}&s=100`
+    const email = `${qq}@qq.com`
+    if (email.toLowerCase() !== BLOGGER_EMAIL.toLowerCase()) {
+      form.value.email = email
+    }
+  }
+}
+
+function onAvatarError() {
+  form.value.avatar = ''
+}
 
 function onSubmit() {
   form.value.nickname = (form.value.nickname || '').trim()
@@ -46,9 +86,26 @@ function onSubmit() {
       required
     />
     <div class="tk-meta">
+      <div class="tk-form-avatar" aria-hidden="true">
+        <img
+          v-if="form.avatar"
+          :src="form.avatar"
+          alt=""
+          referrerpolicy="no-referrer"
+          @error="onAvatarError"
+        />
+        <User v-else class="tabler-icon" />
+      </div>
       <label>
         <span>昵称</span>
-        <input v-model="form.nickname" type="text" placeholder="必填" :maxlength="NICKNAME_MAX" required />
+        <input
+          v-model="form.nickname"
+          type="text"
+          placeholder="必填"
+          :maxlength="NICKNAME_MAX"
+          required
+          @blur="onNicknameBlur"
+        />
       </label>
       <label>
         <span>邮箱</span>
@@ -61,6 +118,10 @@ function onSubmit() {
     </div>
     <div class="tk-actions">
       <button v-if="cancelable" class="tk-cancel" type="button" @click="emit('cancel')">取消</button>
+      <label class="tk-notice">
+        <input v-model="form.notice" type="checkbox" />
+        有回复时邮件通知我
+      </label>
       <button class="tk-send" type="submit">{{ submitText }}</button>
     </div>
   </form>
@@ -88,19 +149,41 @@ function onSubmit() {
 }
 .tk-meta {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 2.5rem repeat(3, minmax(0, 1fr));
   gap: 0.6rem;
+  align-items: stretch;
 }
-.tk-meta label {
+.tk-form-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--btn-regular-bg);
+  color: var(--btn-content);
+}
+.tk-form-avatar .tabler-icon {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+.tk-form-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.tk-meta > label {
   display: flex;
   min-height: 2.5rem;
+  min-width: 0;
   border: 1px solid var(--line-divider);
   border-radius: 0.7rem;
   overflow: hidden;
   background: var(--btn-regular-bg);
   transition: border-color 0.15s ease;
 }
-.tk-meta label:focus-within {
+.tk-meta > label:focus-within {
   border-color: var(--primary);
 }
 .tk-meta span {
@@ -123,7 +206,24 @@ function onSubmit() {
 .tk-actions {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 0.5rem;
+}
+.tk-notice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-right: 0.45rem;
+  font-size: calc(0.85rem + 2px);
+  color: var(--c-text-2);
+  cursor: pointer;
+  user-select: none;
+}
+.tk-notice input {
+  width: 0.95rem;
+  height: 0.95rem;
+  accent-color: var(--primary);
+  cursor: pointer;
 }
 .tk-send,
 .tk-cancel {
@@ -149,6 +249,11 @@ function onSubmit() {
   color: var(--btn-content);
 }
 @media (max-width: 700px) {
-  .tk-meta { grid-template-columns: 1fr; }
+  .tk-meta {
+    grid-template-columns: 2.5rem minmax(0, 1fr);
+  }
+  .tk-meta > label:not(:first-of-type) {
+    grid-column: 1 / -1;
+  }
 }
 </style>

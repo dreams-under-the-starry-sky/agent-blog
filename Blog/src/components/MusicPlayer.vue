@@ -21,7 +21,7 @@ const index = ref(0)
 const playing = ref(false)
 const currentTime = ref(0)
 const duration = ref(0)
-const volume = ref(50)
+const volume = ref(40)
 const mode = ref<PlayMode>('loop')
 const listOpen = ref(true)
 const audio = ref<HTMLAudioElement | null>(null)
@@ -151,7 +151,11 @@ onMounted(() => {
   applyVolume()
 })
 onBeforeUnmount(() => {
-  audio.value?.pause()
+  const el = audio.value
+  if (!el) return
+  el.pause()
+  el.removeAttribute('src')
+  el.load()
 })
 </script>
 

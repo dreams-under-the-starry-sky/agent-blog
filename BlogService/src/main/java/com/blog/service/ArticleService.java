@@ -3,6 +3,7 @@ package com.blog.service;
 import com.blog.common.BizException;
 import com.blog.common.ErrorCode;
 import com.blog.common.IdGenerator;
+import com.blog.common.MarkdownExcerpt;
 import com.blog.common.PageQuery;
 import com.blog.common.PageResult;
 import com.blog.dto.ArticleSaveRequest;
@@ -34,6 +35,9 @@ import java.util.regex.Pattern;
 
 @Service
 public class ArticleService {
+    /** 与 blog_article.description varchar(80) 一致，不要 ALTER。 */
+    static final int DESCRIPTION_MAX = 80;
+
     @Resource
     private ArticleMapper articleMapper;
     @Resource
@@ -86,7 +90,7 @@ public class ArticleService {
         article.setId(creating ? IdGenerator.nextId() : req.getId());
         article.setCategoryId(req.getCategoryId());
         article.setTitle(req.getTitle());
-        article.setDescription(req.getDescription());
+        article.setDescription(resolveDescription(req.getDescription(), req.getContent()));
         article.setCover(trimUrl(req.getCover()));
         article.setThumbnail(trimUrl(req.getThumbnail() != null ? req.getThumbnail() : req.getCover()));
         article.setComment(req.getComment() == null ? 1 : req.getComment());
@@ -282,6 +286,17 @@ public class ArticleService {
             }
         }
         return keep;
+    }
+
+    private String resolveDescription(String description, String content) {
+        String value = description == null ? "" : description.trim();
+        if (value.isEmpty()) {
+            value = MarkdownExcerpt.from(content, DESCRIPTION_MAX);
+        }
+        if (value.isEmpty()) {
+            return null;
+        }
+        return value.length() > DESCRIPTION_MAX ? value.substring(0, DESCRIPTION_MAX) : value;
     }
 
     private String trimUrl(String url) {

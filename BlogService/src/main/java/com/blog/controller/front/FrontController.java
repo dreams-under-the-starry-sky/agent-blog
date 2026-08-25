@@ -6,6 +6,7 @@ import com.blog.common.PageQuery;
 import com.blog.common.PageResult;
 import com.blog.dto.CommentSubmitRequest;
 import com.blog.dto.MessageSubmitRequest;
+import com.blog.dto.QqInfoVO;
 import com.blog.entity.Article;
 import com.blog.entity.Category;
 import com.blog.entity.Comment;
@@ -24,6 +25,7 @@ import com.blog.service.EssayService;
 import com.blog.service.MessageService;
 import com.blog.service.MetaService;
 import com.blog.service.MiscService;
+import com.blog.service.QqInfoService;
 import com.blog.service.RecordService;
 import com.blog.service.WebUpdateLogService;
 import com.blog.validation.FrontVisitor;
@@ -62,6 +64,8 @@ public class FrontController {
     private MiscService miscService;
     @Resource
     private WebUpdateLogService webUpdateLogService;
+    @Resource
+    private QqInfoService qqInfoService;
 
     @GetMapping("/articles")
     public ResponseEntity<PageResult<Article>> articles(PageQuery query) {
@@ -100,6 +104,11 @@ public class FrontController {
         data.put("categories", metaService.categories());
         data.put("tags", metaService.tags());
         return ResponseEntity.ok(data);
+    }
+
+    @GetMapping("/qq-info")
+    public ResponseEntity<QqInfoVO> qqInfo(String qq, HttpServletRequest request) {
+        return ResponseEntity.ok(qqInfoService.lookup(qq, request));
     }
 
     @GetMapping("/comments")

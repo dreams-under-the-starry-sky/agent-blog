@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { usePageReadyOnMount } from '@/utils/pageReady'
+import { BLOGGER_EMAIL, siteConfig } from '@/config'
 
 usePageReadyOnMount()
 </script>
@@ -11,8 +12,8 @@ usePageReadyOnMount()
     <section>
       <h2 class="section-title">🚩 关于我</h2>
       <ul>
-        <li><b>昵称：</b>Crossroads</li>
-        <li><b>邮箱：</b>1762546812@qq.com</li>
+        <li><b>昵称：</b>{{ siteConfig.title }}</li>
+        <li><b>邮箱：</b>{{ BLOGGER_EMAIL }}</li>
         <li><b>为什么取这个名字：</b>人生就是无数个十字路口，别想太多，选一个看得顺眼的就行 🤪</li>
       </ul>
     </section>

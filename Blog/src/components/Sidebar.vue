@@ -5,7 +5,7 @@ import MusicIcon from '@vicons/tabler/es/Music'
 import { frontApi } from '@/api/front'
 import { siteConfig } from '@/config'
 import { formatDate } from '@/utils/format'
-import avatarImg from '@/assets/avatar.jpg'
+import avatarImg from '@/assets/siteAvatar.jpg'
 import MusicPlayer from '@/components/MusicPlayer.vue'
 
 const articleTotal = ref(0)

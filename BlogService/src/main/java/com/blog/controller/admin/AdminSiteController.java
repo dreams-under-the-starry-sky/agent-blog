@@ -4,10 +4,12 @@ import com.blog.common.PageQuery;
 import com.blog.common.PageResult;
 import com.blog.entity.Black;
 import com.blog.entity.BlogLog;
+import com.blog.entity.EmailFail;
 import com.blog.entity.EmailRecord;
 import com.blog.entity.FileDelFail;
 import com.blog.entity.Music;
 import com.blog.entity.WebUpdateLog;
+import com.blog.service.MailNotificationService;
 import com.blog.service.MiscService;
 import com.blog.service.WebUpdateLogService;
 import jakarta.annotation.Resource;
@@ -30,6 +32,8 @@ public class AdminSiteController {
     private MiscService miscService;
     @Resource
     private WebUpdateLogService webUpdateLogService;
+    @Resource
+    private MailNotificationService mailNotificationService;
 
     @GetMapping("/logs")
     public ResponseEntity<PageResult<BlogLog>> logs(PageQuery query) {
@@ -87,6 +91,17 @@ public class AdminSiteController {
     @GetMapping("/emails")
     public ResponseEntity<PageResult<EmailRecord>> emails(PageQuery query) {
         return ResponseEntity.ok(miscService.emails(query));
+    }
+
+    @GetMapping("/email-fails")
+    public ResponseEntity<PageResult<EmailFail>> emailFails(PageQuery query) {
+        return ResponseEntity.ok(mailNotificationService.failPage(query));
+    }
+
+    @PostMapping("/email-fails/{id}/resend")
+    public ResponseEntity<Void> resendEmailFail(@PathVariable Integer id) {
+        mailNotificationService.resend(id);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/file-del-fails")

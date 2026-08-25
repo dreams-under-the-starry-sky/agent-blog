@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { adminApi } from '@/api/admin'
 import CrudPage from '@/components/CrudPage.vue'
@@ -40,6 +40,14 @@ function applySearch() {
 function resetFilters() {
   categoryId.value = undefined
 }
+function categorySort(id?: number) {
+  return cats.value.find((item) => item.id === id)?.sort ?? 99
+}
+
+watch(() => form.categoryId, (id) => {
+  form.sort = categorySort(id)
+})
+
 function open(row?: any) {
   Object.assign(form, {
     id: row?.id,
@@ -48,7 +56,7 @@ function open(row?: any) {
     description: row?.description || '',
     href: row?.href || '',
     logo: row?.logo || '',
-    sort: row?.sort ?? 99,
+    sort: categorySort(row?.categoryId),
   })
   visible.value = true
 }
@@ -107,7 +115,7 @@ onMounted(load)
           <el-form-item label="简介"><el-input v-model="form.description" /></el-form-item>
           <el-form-item label="链接"><el-input v-model="form.href" /></el-form-item>
           <el-form-item label="Logo"><el-input v-model="form.logo" /></el-form-item>
-          <el-form-item label="排序"><el-input-number v-model="form.sort" /></el-form-item>
+          <el-form-item label="排序"><el-input-number v-model="form.sort" disabled /></el-form-item>
         </el-form>
         <template #footer><el-button type="primary" @click="save">保存</el-button></template>
       </el-dialog>

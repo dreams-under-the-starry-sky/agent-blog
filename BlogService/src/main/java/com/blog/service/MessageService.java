@@ -11,7 +11,9 @@ import com.blog.mapper.BlackMapper;
 import com.blog.mapper.MessageMapper;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -31,6 +33,14 @@ public class MessageService {
     private IpLocationService ipLocationService;
     @Resource
     private FrontReplyLimitService frontReplyLimitService;
+    @Resource
+    private MailNotificationService mailNotificationService;
+    @Value("${spring.mail.username:}")
+    private String mailUsername;
+    @Value("${blog.site.title:长路漫漫}")
+    private String siteTitle;
+    @Value("${blog.site.msg-avatar}")
+    private String msgAvatar;
 
     public PageResult<Message> treeVisiblePage(Integer pageId, PageQuery query) {
         if (pageId == null) {
@@ -51,11 +61,11 @@ public class MessageService {
 
     public void submit(MessageSubmitRequest req, HttpServletRequest request, boolean asBlogger) {
         String ip = CommentService.clientIp(request);
-        if (blackMapper.countMatch(ip, req.getNickname(), req.getEmail()) > 0) {
-            throw new BizException(ErrorCode.USER_BLACKLISTED);
-        }
+        // if (blackMapper.countMatch(ip, req.getNickname(), req.getEmail()) > 0) {
+        //     throw new BizException(ErrorCode.USER_BLACKLISTED);
+        // }
         if (!asBlogger) {
-            frontReplyLimitService.assertAllowed(request, req.getNickname(), req.getEmail());
+            // frontReplyLimitService.assertAllowed(request, req.getNickname(), req.getEmail());
         }
         Message message = new Message();
         message.setId(IdGenerator.nextId());
@@ -69,16 +79,17 @@ public class MessageService {
             }
             message.setPageId(pageId);
         }
-        message.setNickname(CommentService.trim(req.getNickname(), 20));
-        message.setEmail(CommentService.trim(req.getEmail(), 30));
+        message.setNickname(asBlogger ? siteTitle : CommentService.trim(req.getNickname(), 20));
+        message.setEmail(CommentService.trim(asBlogger && !StringUtils.hasText(req.getEmail()) ? mailUsername : req.getEmail(), 30));
         message.setWebsite(CommentService.trim(req.getWebsite(), 50));
+        message.setAvatar(asBlogger ? msgAvatar : CommentService.trim(req.getAvatar(), 255));
         message.setHandle(asBlogger ? 1 : 0);
         message.setNotice(req.getNotice() == null ? 0 : req.getNotice());
         message.setSend(0);
         message.setVisible(1);
         String ua = request.getHeader("User-Agent");
         message.setBrowser(CommentService.trim(CommentService.parseBrowser(ua), 50));
-        message.setSystemInfo(CommentService.trim(CommentService.parseOs(ua), 20));
+        message.setSystemInfo(CommentService.trim(CommentService.parseOs(request), 20));
         message.setIp(CommentService.trim(ip, 15));
         IpLocationService.Location location = ipLocationService.lookup(ip);
         message.setProvince(location.province());
@@ -87,11 +98,24 @@ public class MessageService {
         messageMapper.insert(message);
         if (asBlogger && req.getParentId() != null) {
             messageMapper.updateHandle(req.getParentId(), 1);
+            mailNotificationService.notifyMessageReply(messageMapper.selectById(req.getParentId()));
+            mailNotificationService.notifyMessageReply(message);
         }
     }
 
     public void handle(Long id, Integer handle) {
         messageMapper.updateHandle(id, handle);
+    }
+
+    public void review(Long id, boolean approved) {
+        Message old = messageMapper.selectById(id);
+        if (old == null) {
+            throw new BizException(ErrorCode.MESSAGE_PARENT_NOT_FOUND);
+        }
+        messageMapper.updateReview(id, approved ? 1 : 0);
+        if (approved) {
+            mailNotificationService.notifyMessageReply(messageMapper.selectById(id));
+        }
     }
 
     public void visible(Long id, Integer visible) {

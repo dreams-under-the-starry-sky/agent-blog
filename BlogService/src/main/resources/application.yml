@@ -26,6 +26,19 @@ spring:
     url: ${BLOG_DB_URL:}
     username: ${BLOG_DB_USERNAME:}
     password: ${BLOG_DB_PASSWORD:}
+  mail:
+    host: smtp.qq.com
+    port: 587
+    username: ${BLOG_MAIL_USERNAME:}
+    password: ${BLOG_MAIL_PASSWORD:}
+    protocol: smtp
+    default-encoding: UTF-8
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: true
+      mail.smtp.ssl.trust: smtp.qq.com
+      mail.smtp.ssl.protocols: TLSv1.2
 
 mybatis:
   mapper-locations: classpath:mapper/*.xml
@@ -59,8 +72,17 @@ blog:
     cdn-domain: ${BLOG_QINIU_CDN_DOMAIN:}
   cors:
     origins: http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174
+  site:
+    title: ${BLOG_SITE_TITLE:}
+    msg-avatar: ${BLOG_SITE_MSG_AVATAR:}
+    site-url: ${BLOG_SITE_URL:}
   # 首次启动会把 admin 密码重置为下面的明文，便于本地登录；真实值放 application-local.yml
   admin:
     reset-password: ${BLOG_ADMIN_RESET_PASSWORD:}
   map:
     qq-key: ${BLOG_MAP_QQ_KEY:}
+    ip-url: https://apis.map.qq.com/ws/location/v1/ip
+  uapi:
+    token: ${BLOG_UAPI_TOKEN:}
+    qq-userinfo-url: https://uapis.cn/api/v1/social/qq/userinfo
+    qq-avatar-url: https://q1.qlogo.cn/g?b=qq&nk={qq}&s=100

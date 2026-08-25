@@ -25,7 +25,7 @@
         SELECT id, page_id, parent_id, root_id, content, blogger, parent_nickname, nickname, email, avatar, website,
                handle, notice, send, visible, browser, system_info, ip, province, create_time
         FROM blog_message
-        WHERE visible = 1
+        WHERE visible = 1 AND handle = 1
         ORDER BY id ASC
     </select>
 
@@ -33,7 +33,7 @@
         SELECT id, page_id, parent_id, root_id, content, blogger, parent_nickname, nickname, email, avatar, website,
                handle, notice, send, visible, browser, system_info, ip, province, create_time
         FROM blog_message
-        WHERE visible = 1 AND page_id = #{pageId}
+        WHERE visible = 1 AND handle = 1 AND page_id = #{pageId}
         ORDER BY id ASC
     </select>
 
@@ -71,6 +71,14 @@
 
     <update id="updateVisible">
         UPDATE blog_message SET visible = #{visible} WHERE id = #{id}
+    </update>
+
+    <update id="updateReview">
+        UPDATE blog_message SET handle = 1, visible = #{visible} WHERE id = #{id}
+    </update>
+
+    <update id="updateSend">
+        UPDATE blog_message SET send = 1 WHERE id = #{id} AND send = 0
     </update>
 
     <delete id="deleteById">

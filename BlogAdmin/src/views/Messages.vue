@@ -16,6 +16,7 @@ const data = ref({ total: 0, list: [] as any[] })
 const reply = ref('')
 const current = ref<any>(null)
 const showReply = ref(false)
+const dialogMode = ref<'view' | 'review'>('view')
 
 function query() {
   return {
@@ -39,9 +40,10 @@ function resetFilters() {
   send.value = undefined
 }
 
-function openDetail(row: any) {
+function openDialog(row: any, mode: 'view' | 'review') {
   current.value = row
   reply.value = ''
+  dialogMode.value = mode
   showReply.value = true
 }
 
@@ -62,6 +64,11 @@ async function sendReply() {
     ElMessage.warning('请输入回复内容')
     return
   }
+  await ElMessageBox.confirm('确认回复该留言？回复后将自动标记为已处理。', '回复确认', {
+    type: 'warning',
+    confirmButtonText: '确认回复',
+    cancelButtonText: '取消',
+  })
   await adminApi.replyMessage({
     parentId: current.value.id,
     nickname: '博主',
@@ -71,6 +78,15 @@ async function sendReply() {
   showReply.value = false
   current.value = null
   reply.value = ''
+  await load()
+}
+
+async function review(approved: boolean) {
+  if (!current.value) return
+  await adminApi.reviewMessage(current.value.id, approved)
+  ElMessage.success(approved ? '留言已通过' : '留言已设为不通过并删除')
+  showReply.value = false
+  current.value = null
   await load()
 }
 
@@ -122,14 +138,38 @@ onMounted(load)
     </el-table-column>
     <el-table-column label="操作">
       <template #default="{ row }">
-        <el-button link type="primary" @click="openDetail(row)">{{ row.handle === 1 ? '查看' : '回复' }}</el-button>
+        <el-button
+          v-if="row.handle === 1 || row.visible === 0"
+          link
+          type="primary"
+          @click="openDialog(row, 'view')"
+        >
+          查看
+        </el-button>
+        <el-button
+          v-else
+          link
+          type="warning"
+          @click="openDialog(row, 'review')"
+        >
+          处理
+        </el-button>
         <el-button link :type="row.visible === 1 ? 'danger' : 'primary'" @click="toggleVisible(row)">
           {{ row.visible === 1 ? '删除' : '恢复' }}
         </el-button>
       </template>
     </el-table-column>
     <template #extra>
-      <ReplyDetailDialog v-model="showReply" v-model:reply="reply" :row="current" kind="message" @submit="sendReply" />
+      <ReplyDetailDialog
+        v-model="showReply"
+        v-model:reply="reply"
+        :row="current"
+        kind="message"
+        :mode="dialogMode"
+        @submit="sendReply"
+        @approve="review(true)"
+        @reject="review(false)"
+      />
     </template>
   </CrudPage>
 </template>

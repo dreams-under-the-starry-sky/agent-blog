@@ -11,6 +11,12 @@ export type CommentFormModel = {
   email: string
   website: string
   content: string
+  avatar: string
+  notice: boolean
+}
+
+export function emptyCommentForm(): CommentFormModel {
+  return { nickname: '', email: '', website: '', content: '', avatar: '', notice: false }
 }
 
 export function validateCommentInput(form: {
@@ -37,4 +43,6 @@ export function clearCommentForm(form: CommentFormModel) {
   form.email = ''
   form.website = ''
   form.content = ''
+  form.avatar = ''
+  form.notice = false
 }

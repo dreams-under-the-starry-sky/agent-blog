@@ -2,12 +2,14 @@
 import { ref, watch } from 'vue'
 import ArrowBackUp from '@vicons/tabler/es/ArrowBackUp'
 import ChevronDown from '@vicons/tabler/es/ChevronDown'
+import ChevronUp from '@vicons/tabler/es/ChevronUp'
 import Clock from '@vicons/tabler/es/Clock'
 import DeviceDesktop from '@vicons/tabler/es/DeviceDesktop'
 import MapPin from '@vicons/tabler/es/MapPin'
 import World from '@vicons/tabler/es/World'
 import { formatTime } from '@/utils/format'
 import CommentForm from '@/components/CommentForm.vue'
+import type { CommentFormModel } from '@/utils/comment'
 
 export interface ThreadItem {
   id: number
@@ -16,6 +18,7 @@ export interface ThreadItem {
   blogger?: number
   parentNickname?: string
   website?: string
+  avatar?: string
   createTime?: string
   province?: string
   city?: string
@@ -23,13 +26,14 @@ export interface ThreadItem {
   systemInfo?: string
   browser?: string
   visible?: number
+  handle?: number
   children?: ThreadItem[]
 }
 
 const props = defineProps<{
   items: ThreadItem[]
   replyTo: number | null
-  form: { nickname: string; email: string; website: string; content: string }
+  form: CommentFormModel
 }>()
 
 const emit = defineEmits<{
@@ -41,21 +45,34 @@ const emit = defineEmits<{
 const expanded = ref<number[]>([])
 
 function visibleList(items?: ThreadItem[]) {
-  return (items || []).filter((item) => item.visible !== 0)
+  return (items || []).filter((item) => item.visible !== 0 && item.handle !== 0)
 }
 
 function childList(item: ThreadItem) {
   return visibleList(item.children)
 }
 
-function shownChildren(item: ThreadItem) {
-  const kids = childList(item)
-  if (kids.length <= 3 || expanded.value.includes(item.id)) return kids
-  return kids.slice(0, 3)
+function previewChildren(item: ThreadItem) {
+  return childList(item).slice(0, 3)
+}
+
+function extraChildren(item: ThreadItem) {
+  return childList(item).slice(3)
 }
 
 function expand(id: number) {
   if (!expanded.value.includes(id)) expanded.value = [...expanded.value, id]
+}
+
+function collapse(id: number) {
+  const item = visibleList(props.items).find((row) => row.id === id)
+  if (item && props.replyTo != null) {
+    const hidden = childList(item).slice(3)
+    if (hidden.some((child) => child.id === props.replyTo)) {
+      emit('cancel')
+    }
+  }
+  expanded.value = expanded.value.filter((value) => value !== id)
 }
 
 watch(
@@ -87,8 +104,9 @@ function displayMeta(value?: string) {
 <template>
   <div class="tk-list">
     <article v-for="item in visibleList(items)" :key="item.id" class="tk-comment">
-      <div class="tk-avatar" :style="{ background: `oklch(0.62 0.12 ${hue(item.nickname)})` }">
-        {{ initial(item.nickname) }}
+      <div class="tk-avatar" :style="item.avatar ? undefined : { background: `oklch(0.62 0.12 ${hue(item.nickname)})` }">
+        <img v-if="item.avatar" :src="item.avatar" alt="" referrerpolicy="no-referrer" />
+        <template v-else>{{ initial(item.nickname) }}</template>
       </div>
       <div class="tk-main">
         <div class="tk-head">
@@ -123,9 +141,10 @@ function displayMeta(value?: string) {
           />
         </div>
         <div v-if="childList(item).length" class="tk-replies">
-          <article v-for="child in shownChildren(item)" :key="child.id" class="tk-comment nested">
-            <div class="tk-avatar" :style="{ background: `oklch(0.62 0.12 ${hue(child.nickname)})` }">
-              {{ initial(child.nickname) }}
+          <article v-for="child in previewChildren(item)" :key="child.id" class="tk-comment nested">
+            <div class="tk-avatar" :style="child.avatar ? undefined : { background: `oklch(0.62 0.12 ${hue(child.nickname)})` }">
+              <img v-if="child.avatar" :src="child.avatar" alt="" referrerpolicy="no-referrer" />
+              <template v-else>{{ initial(child.nickname) }}</template>
             </div>
             <div class="tk-main">
               <div class="tk-head">
@@ -161,6 +180,53 @@ function displayMeta(value?: string) {
               </div>
             </div>
           </article>
+          <div
+            v-if="extraChildren(item).length"
+            class="tk-extra-wrap"
+            :class="{ open: expanded.includes(item.id) }"
+          >
+            <div class="tk-extra">
+              <article v-for="child in extraChildren(item)" :key="child.id" class="tk-comment nested">
+                <div class="tk-avatar" :style="child.avatar ? undefined : { background: `oklch(0.62 0.12 ${hue(child.nickname)})` }">
+                  <img v-if="child.avatar" :src="child.avatar" alt="" referrerpolicy="no-referrer" />
+                  <template v-else>{{ initial(child.nickname) }}</template>
+                </div>
+                <div class="tk-main">
+                  <div class="tk-head">
+                    <a v-if="child.website" class="tk-nick" :href="child.website" target="_blank" rel="noreferrer">{{ child.nickname }}</a>
+                    <strong v-else class="tk-nick">{{ child.nickname }}</strong>
+                    <span v-if="child.blogger === 1" class="tk-tag">博主</span>
+                    <span v-if="child.parentNickname" class="tk-to">@{{ child.parentNickname }}</span>
+                    <span class="tk-info">
+                      <MapPin class="tabler-icon" />{{ displayMeta(child.province) }}
+                    </span>
+                    <span class="tk-info">
+                      <DeviceDesktop class="tabler-icon" />{{ displayMeta(child.systemInfo) }}
+                    </span>
+                    <span class="tk-info">
+                      <World class="tabler-icon" />{{ displayMeta(child.browser) }}
+                    </span>
+                    <span class="tk-time">
+                      <Clock class="tabler-icon" />{{ formatTime(child.createTime) }}
+                    </span>
+                    <button class="tk-reply" type="button" title="回复" @click="emit('reply', child.id)">
+                      <ArrowBackUp class="tabler-icon" />
+                    </button>
+                  </div>
+                  <p class="tk-content">{{ child.content }}</p>
+                  <div v-if="replyTo === child.id" class="tk-reply-box">
+                    <CommentForm
+                      :model-value="form"
+                      cancelable
+                      :placeholder="`回复 @${child.nickname}`"
+                      @submit="emit('submit', child.id)"
+                      @cancel="emit('cancel')"
+                    />
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
           <button
             v-if="childList(item).length > 3 && !expanded.includes(item.id)"
             class="tk-more"
@@ -169,6 +235,15 @@ function displayMeta(value?: string) {
           >
             <ChevronDown class="tabler-icon" />
             展开全部 {{ childList(item).length }} 条回复
+          </button>
+          <button
+            v-else-if="childList(item).length > 3"
+            class="tk-more"
+            type="button"
+            @click="collapse(item.id)"
+          >
+            <ChevronUp class="tabler-icon" />
+            收起回复
           </button>
         </div>
       </div>
@@ -205,6 +280,12 @@ function displayMeta(value?: string) {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+}
+.tk-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 .tk-main { flex: 1; min-width: 0; }
 .tk-head {
@@ -259,6 +340,18 @@ function displayMeta(value?: string) {
   word-break: break-word;
 }
 .tk-replies { margin-top: 0.35rem; }
+.tk-extra-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s ease;
+}
+.tk-extra-wrap.open {
+  grid-template-rows: 1fr;
+}
+.tk-extra {
+  min-height: 0;
+  overflow: hidden;
+}
 .tk-more {
   margin-top: 0.75rem;
   height: 2rem;

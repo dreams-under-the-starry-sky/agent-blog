@@ -6,7 +6,7 @@ import type { Comment } from '@/api/types'
 import { frontApi } from '@/api/front'
 import CommentForm from '@/components/CommentForm.vue'
 import CommentList from '@/components/CommentList.vue'
-import { clearCommentForm, validateCommentInput } from '@/utils/comment'
+import { clearCommentForm, emptyCommentForm, validateCommentInput } from '@/utils/comment'
 import { useLazyVisible } from '@/utils/lazyVisible'
 
 const props = defineProps<{ articleId: number }>()
@@ -16,11 +16,11 @@ const comments = ref<Comment[]>([])
 const loaded = ref(false)
 const loading = ref(false)
 const replyTo = ref<number | null>(null)
-const form = reactive({ nickname: '', email: '', website: '', content: '' })
+const form = reactive(emptyCommentForm())
 
 function countVisible(items?: Comment[]): number {
   return (items || []).reduce((sum, item) => {
-    if (item.visible === 0) return sum
+    if (item.visible === 0 || item.handle === 0) return sum
     return sum + 1 + countVisible(item.children)
   }, 0)
 }
@@ -50,6 +50,8 @@ async function submit(parentId?: number | null) {
     nickname: form.nickname,
     email: form.email,
     website: form.website,
+    avatar: form.avatar,
+    notice: form.notice ? 1 : 0,
     content: form.content,
   })
   ElMessage.success('评论已提交')

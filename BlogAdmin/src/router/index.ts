@@ -29,21 +29,24 @@ const router = createRouter({
         { path: 'logs', meta: { title: '运行日志' }, component: () => import('@/views/Logs.vue') },
         { path: 'web-update-logs', meta: { title: '功能日志' }, component: () => import('@/views/WebUpdateLogs.vue') },
         { path: 'emails', meta: { title: '邮件记录' }, component: () => import('@/views/Emails.vue') },
+        { path: 'email-fails', meta: { title: '失败邮件' }, component: () => import('@/views/EmailFails.vue') },
         { path: 'file-fails', meta: { title: '删除失败' }, component: () => import('@/views/FileFails.vue') },
       ],
     },
+    { path: '/:pathMatch(.*)*', redirect: '/login' },
   ],
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore()
-  if (to.path !== '/login' && !auth.loggedIn) {
+  if (to.path === '/login') {
+    if (!auth.loggedIn) return true
+    return (await auth.validateSession()) ? '/dashboard' : true
+  }
+  if (!auth.loggedIn) {
     return '/login'
   }
-  if (to.path === '/login' && auth.loggedIn) {
-    return '/dashboard'
-  }
-  return true
+  return (await auth.validateSession()) || '/login'
 })
 
 export default router

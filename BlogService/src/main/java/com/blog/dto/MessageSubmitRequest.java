@@ -23,5 +23,6 @@ public class MessageSubmitRequest {
             groups = FrontVisitor.class)
     private String email;
     private String website;
+    private String avatar;
     private Integer notice;
 }

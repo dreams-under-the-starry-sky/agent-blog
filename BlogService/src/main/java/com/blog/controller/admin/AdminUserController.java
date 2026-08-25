@@ -3,6 +3,7 @@ package com.blog.controller.admin;
 import com.blog.common.PageQuery;
 import com.blog.common.PageResult;
 import com.blog.dto.MessageSubmitRequest;
+import com.blog.dto.ReviewRequest;
 import com.blog.entity.Friend;
 import com.blog.entity.FriendCategory;
 import com.blog.entity.Message;
@@ -46,6 +47,12 @@ public class AdminUserController {
     @PutMapping("/messages/{id}/handle")
     public ResponseEntity<Void> handleMessage(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
         messageService.handle(id, body.get("handle"));
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/messages/{id}/review")
+    public ResponseEntity<Void> reviewMessage(@PathVariable Long id, @Valid @RequestBody ReviewRequest req) {
+        messageService.review(id, Boolean.TRUE.equals(req.getApproved()));
         return ResponseEntity.ok().build();
     }
 

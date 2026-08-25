@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.blog.mapper.EmailRecordMapper">
+    <insert id="insert">
+        INSERT INTO blog_email (article_id, page_id, message_id, send_name, send_email, receive_name, receive_email, content)
+        VALUES (#{articleId}, #{pageId}, #{messageId}, #{sendName}, #{sendEmail}, #{receiveName}, #{receiveEmail}, #{content})
+    </insert>
+
     <select id="selectPage" resultType="com.blog.entity.EmailRecord">
         SELECT id, article_id, page_id, message_id, send_name, send_email, receive_name, receive_email, content, create_time
         FROM blog_email

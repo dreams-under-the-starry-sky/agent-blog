@@ -13,9 +13,14 @@ import com.blog.mapper.BlackMapper;
 import com.blog.mapper.CommentMapper;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,6 +28,8 @@ import java.util.Map;
 
 @Service
 public class CommentService {
+    private static final Logger log = LoggerFactory.getLogger(CommentService.class);
+
     @Resource
     private CommentMapper commentMapper;
     @Resource
@@ -33,6 +40,14 @@ public class CommentService {
     private IpLocationService ipLocationService;
     @Resource
     private FrontReplyLimitService frontReplyLimitService;
+    @Resource
+    private MailNotificationService mailNotificationService;
+    @Value("${spring.mail.username:}")
+    private String mailUsername;
+    @Value("${blog.site.title:长路漫漫}")
+    private String siteTitle;
+    @Value("${blog.site.msg-avatar}")
+    private String msgAvatar;
 
     public List<Comment> treeByArticle(Long articleId) {
         return toTree(commentMapper.selectByArticleId(articleId));
@@ -51,9 +66,9 @@ public class CommentService {
             throw new BizException(ErrorCode.COMMENT_CLOSED);
         }
         String ip = clientIp(request);
-        assertNotBlacklisted(ip, req.getNickname(), req.getEmail());
+        // assertNotBlacklisted(ip, req.getNickname(), req.getEmail());
         if (!asBlogger) {
-            frontReplyLimitService.assertAllowed(request, req.getNickname(), req.getEmail());
+            // frontReplyLimitService.assertAllowed(request, req.getNickname(), req.getEmail());
         }
         Comment comment = new Comment();
         comment.setId(IdGenerator.nextId());
@@ -61,25 +76,35 @@ public class CommentService {
         comment.setContent(req.getContent());
         comment.setBlogger(asBlogger ? 1 : 0);
         fillReplyMeta(comment, req.getParentId());
-        comment.setNickname(trim(req.getNickname(), 20));
-        comment.setEmail(trim(req.getEmail(), 30));
+        comment.setNickname(asBlogger ? siteTitle : trim(req.getNickname(), 20));
+        comment.setEmail(trim(asBlogger && !StringUtils.hasText(req.getEmail()) ? mailUsername : req.getEmail(), 30));
         comment.setWebsite(trim(req.getWebsite(), 50));
+        comment.setAvatar(asBlogger ? msgAvatar : trim(req.getAvatar(), 255));
         comment.setHandle(asBlogger ? 1 : 0);
         comment.setNotice(req.getNotice() == null ? 0 : req.getNotice());
         comment.setSend(0);
         comment.setVisible(1);
         String ua = request.getHeader("User-Agent");
         comment.setBrowser(trim(parseBrowser(ua), 50));
-        comment.setSystemInfo(trim(parseOs(ua), 20));
+        comment.setSystemInfo(trim(parseOs(request), 20));
         comment.setIp(trim(ip, 15));
         IpLocationService.Location location = ipLocationService.lookup(ip);
         comment.setProvince(location.province());
         comment.setCity(location.city());
         comment.setDistrict(location.district());
         commentMapper.insert(comment);
-        articleMapper.incrementComments(req.getArticleId(), 1);
+        if (frontVisible(comment.getHandle(), comment.getVisible())) {
+            articleMapper.incrementComments(req.getArticleId(), 1);
+        }
         if (asBlogger && req.getParentId() != null) {
+            Comment parent = commentMapper.selectById(req.getParentId());
             commentMapper.updateHandle(req.getParentId(), 1);
+            if (parent != null && !frontVisible(parent.getHandle(), parent.getVisible())
+                    && Integer.valueOf(1).equals(parent.getVisible())) {
+                articleMapper.incrementComments(req.getArticleId(), 1);
+            }
+            mailNotificationService.notifyCommentReply(commentMapper.selectById(req.getParentId()));
+            mailNotificationService.notifyCommentReply(comment);
         }
     }
 
@@ -87,10 +112,28 @@ public class CommentService {
         commentMapper.updateHandle(id, handle);
     }
 
+    public void review(Long id, boolean approved) {
+        Comment old = commentMapper.selectById(id);
+        if (old == null) {
+            throw new BizException(ErrorCode.COMMENT_PARENT_NOT_FOUND);
+        }
+        int visible = approved ? 1 : 0;
+        commentMapper.updateReview(id, visible);
+        boolean wasShown = frontVisible(old.getHandle(), old.getVisible());
+        boolean nowShown = approved;
+        if (old.getArticleId() != null && wasShown != nowShown) {
+            articleMapper.incrementComments(old.getArticleId(), nowShown ? 1 : -1);
+        }
+        if (approved) {
+            mailNotificationService.notifyCommentReply(commentMapper.selectById(id));
+        }
+    }
+
     public void visible(Long id, Integer visible) {
         Comment old = commentMapper.selectById(id);
         commentMapper.updateVisible(id, visible);
-        if (old == null || old.getArticleId() == null || visible == null || visible.equals(old.getVisible())) {
+        if (old == null || old.getArticleId() == null || visible == null || visible.equals(old.getVisible())
+                || !Integer.valueOf(1).equals(old.getHandle())) {
             return;
         }
         articleMapper.incrementComments(old.getArticleId(), Integer.valueOf(1).equals(visible) ? 1 : -1);
@@ -155,13 +198,47 @@ public class CommentService {
     }
 
     static String clientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (!StringUtils.hasText(ip) || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        } else {
-            ip = ip.split(",")[0].trim();
+        //以下两个获取在k8s中，将真实的客户端IP，放到了x-Original-Forwarded-For。而将WAF的回源地址放到了 x-Forwarded-For了。
+        String ipAddress = request.getHeader("X-Original-Forwarded-For");
+        if (ipAddress == null || ipAddress.length() == 0 || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getHeader("X-Forwarded-For");
         }
-        return ip;
+        // 获取nginx等代理的IP
+        if (ipAddress == null || ipAddress.length() == 0 || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getHeader("x-forwarded-for");
+        }
+        if (ipAddress == null || ipAddress.length() == 0 || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getHeader("Proxy-Client-IP");
+        }
+        if (ipAddress == null || ipAddress.length() == 0 || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ipAddress == null || ipAddress.length() == 0 || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getHeader("HTTP_CLIENT_IP");
+        }
+        if (ipAddress == null || ipAddress.length() == 0 || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getHeader("HTTP_X_FORWARDED_FOR");
+        }
+        if(ipAddress == null || ipAddress.length() == 0 || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getRemoteAddr();
+            if(ipAddress.equals("127.0.0.1") || ipAddress.equals("0:0:0:0:0:0:0:1")) {
+                //根据网卡取本机配置的IP
+                InetAddress inet = null;
+                try {
+                    inet = InetAddress.getLocalHost();
+                } catch (UnknownHostException e) {
+                    log.error("unknown host exception, {}", e.getMessage());
+                }
+                if (inet != null) {
+                    ipAddress = inet.getHostAddress();
+                }
+            }
+        }
+        //对于通过多个代理的情况，第一个IP为客户端真实IP,多个IP按照','分割
+        if(ipAddress != null && ipAddress.indexOf(",") > 0) { //"***.***.***.***".length() = 15
+            ipAddress = ipAddress.substring(0, ipAddress.indexOf(","));
+        }
+        return ipAddress;
     }
 
     static String trim(String value, int max) {
@@ -196,27 +273,131 @@ public class CommentService {
         return "Other";
     }
 
+    static boolean frontVisible(Integer handle, Integer visible) {
+        return Integer.valueOf(1).equals(handle) && Integer.valueOf(1).equals(visible);
+    }
+
+    static String parseOs(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+        return parseOs(request.getHeader("User-Agent"), request.getHeader("Sec-CH-UA-Platform-Version"));
+    }
+
     static String parseOs(String ua) {
+        return parseOs(ua, null);
+    }
+
+    static String parseOs(String ua, String platformVersion) {
         if (!StringUtils.hasText(ua)) {
             return null;
         }
         String text = ua.toLowerCase();
         if (text.contains("windows")) {
-            return "Windows";
-        }
-        if (text.contains("mac os") || text.contains("macintosh")) {
-            return "macOS";
+            return parseWindows(ua, platformVersion);
         }
         if (text.contains("android")) {
-            return "Android";
+            String v = versionToken(ua, "Android ");
+            return StringUtils.hasText(v) ? "Android " + majorVersion(v) : "Android";
         }
         if (text.contains("iphone") || text.contains("ipad") || text.contains("ios")) {
-            return "iOS";
+            String v = versionToken(ua, "iPhone OS ");
+            if (!StringUtils.hasText(v)) {
+                v = versionToken(ua, "CPU OS ");
+            }
+            return StringUtils.hasText(v) ? "iOS " + dottedVersion(v) : "iOS";
+        }
+        if (text.contains("mac os") || text.contains("macintosh")) {
+            String v = versionToken(ua, "Mac OS X ");
+            return StringUtils.hasText(v) ? "macOS " + dottedVersion(v) : "macOS";
         }
         if (text.contains("linux")) {
             return "Linux";
         }
         return "Other";
+    }
+
+    private static String parseWindows(String ua, String platformVersion) {
+        Integer chMajor = platformMajor(platformVersion);
+        if (chMajor != null && chMajor >= 13) {
+            return "Windows 11";
+        }
+        String nt = versionToken(ua, "Windows NT ");
+        if (nt.startsWith("10.") || "10".equals(nt)) {
+            return "Windows 10";
+        }
+        if (nt.startsWith("6.3")) {
+            return "Windows 8.1";
+        }
+        if (nt.startsWith("6.2")) {
+            return "Windows 8";
+        }
+        if (nt.startsWith("6.1")) {
+            return "Windows 7";
+        }
+        if (nt.startsWith("6.0")) {
+            return "Windows Vista";
+        }
+        if (nt.startsWith("5.")) {
+            return "Windows XP";
+        }
+        return "Windows";
+    }
+
+    private static Integer platformMajor(String platformVersion) {
+        if (!StringUtils.hasText(platformVersion)) {
+            return null;
+        }
+        String value = platformVersion.trim();
+        if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
+            value = value.substring(1, value.length() - 1);
+        }
+        int dot = value.indexOf('.');
+        String major = dot < 0 ? value : value.substring(0, dot);
+        try {
+            return Integer.parseInt(major);
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private static String versionToken(String ua, String token) {
+        int start = ua.indexOf(token);
+        if (start < 0) {
+            return "";
+        }
+        start += token.length();
+        int end = start;
+        while (end < ua.length()) {
+            char ch = ua.charAt(end);
+            if (!Character.isDigit(ch) && ch != '.' && ch != '_') {
+                break;
+            }
+            end++;
+        }
+        return ua.substring(start, end);
+    }
+
+    private static String majorVersion(String version) {
+        int cut = version.length();
+        int dot = version.indexOf('.');
+        int under = version.indexOf('_');
+        if (dot >= 0) {
+            cut = Math.min(cut, dot);
+        }
+        if (under >= 0) {
+            cut = Math.min(cut, under);
+        }
+        return version.substring(0, cut);
+    }
+
+    private static String dottedVersion(String version) {
+        String dotted = version.replace('_', '.');
+        String[] parts = dotted.split("\\.");
+        if (parts.length >= 2 && StringUtils.hasText(parts[0]) && StringUtils.hasText(parts[1])) {
+            return parts[0] + "." + parts[1];
+        }
+        return parts[0];
     }
 
     private static boolean containsToken(String ua, String token) {
