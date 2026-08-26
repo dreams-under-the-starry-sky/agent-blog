@@ -73,6 +73,4 @@ export const adminApi = {
   emails: (params: object) => get<{ total: number; list: any[] }>('/api/admin/emails', params),
   emailFails: (params: object) => get<{ total: number; list: any[] }>('/api/admin/email-fails', params),
   resendEmailFail: (id: number) => post(`/api/admin/email-fails/${id}/resend`),
-  fileFails: () => get<any[]>('/api/admin/file-del-fails'),
-  deleteFileFail: (id: number) => del(`/api/admin/file-del-fails/${id}`),
 }

@@ -3,6 +3,7 @@ package com.blog.service;
 import com.blog.common.BizException;
 import com.blog.common.ErrorCode;
 import com.blog.common.IdGenerator;
+import com.blog.common.ImageUrls;
 import com.blog.common.PageQuery;
 import com.blog.common.PageResult;
 import com.blog.dto.ImageSaveItem;
@@ -16,8 +17,10 @@ import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -33,7 +36,7 @@ public class RecordService {
 
     public PageResult<Record> page(PageQuery query) {
         List<Record> list = recordMapper.selectPage(query);
-        list.forEach(r -> r.setImages(recordImgMapper.selectByRecordId(r.getId())));
+        fillImages(list);
         return new PageResult<>(recordMapper.countPage(query), list);
     }
 
@@ -67,8 +70,8 @@ public class RecordService {
             }
             RecordImg img = new RecordImg();
             img.setRecordId(record.getId());
-            img.setImgUrl(miscService.clipUrl(item.getImgUrl()));
-            img.setThumbnailUrl(miscService.clipUrl(item.getThumbnailUrl() != null ? item.getThumbnailUrl() : item.getImgUrl()));
+            img.setImgUrl(ImageUrls.clip(item.getImgUrl()));
+            img.setThumbnailUrl(ImageUrls.clip(item.getThumbnailUrl() != null ? item.getThumbnailUrl() : item.getImgUrl()));
             recordImgMapper.insert(img);
         }
         return record.getId();
@@ -77,31 +80,38 @@ public class RecordService {
     @Transactional
     public void delete(Long id) {
         List<RecordImg> images = recordImgMapper.selectByRecordId(id);
+        List<String> urls = new ArrayList<>();
         for (RecordImg img : images) {
-            miscService.tryDeleteFiles(img.getImgUrl(), img.getThumbnailUrl());
+            urls.add(img.getImgUrl());
+            urls.add(img.getThumbnailUrl());
         }
+        miscService.tryDeleteFiles(urls);
         recordImgMapper.deleteByRecordId(id);
         recordMapper.deleteById(id);
     }
 
+    private void fillImages(List<Record> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        List<Long> ids = list.stream().map(Record::getId).toList();
+        List<RecordImg> images = recordImgMapper.selectByRecordIds(ids);
+        Map<Long, List<RecordImg>> grouped = new LinkedHashMap<>();
+        for (RecordImg img : images) {
+            grouped.computeIfAbsent(img.getRecordId(), key -> new ArrayList<>()).add(img);
+        }
+        for (Record record : list) {
+            record.setImages(grouped.getOrDefault(record.getId(), List.of()));
+        }
+    }
+
     private void deleteUnused(List<RecordImg> oldImages, List<ImageSaveItem> next) {
-        Set<String> keep = new HashSet<>();
-        for (ImageSaveItem item : next) {
-            if (item.getImgUrl() != null) {
-                keep.add(item.getImgUrl());
-            }
-            if (item.getThumbnailUrl() != null) {
-                keep.add(item.getThumbnailUrl());
-            }
-        }
+        Set<String> keep = ImageUrls.keepSet(next);
+        List<String> urls = new ArrayList<>();
         for (RecordImg img : oldImages) {
-            if (!keep.contains(img.getImgUrl())) {
-                miscService.tryDeleteFile(img.getImgUrl());
-            }
-            if (!keep.contains(img.getThumbnailUrl())) {
-                miscService.tryDeleteFile(img.getThumbnailUrl());
-            }
+            ImageUrls.addUnused(urls, img.getImgUrl(), img.getThumbnailUrl(), keep);
         }
+        miscService.tryDeleteFiles(urls);
     }
 
     public List<RecordCategory> categories() {

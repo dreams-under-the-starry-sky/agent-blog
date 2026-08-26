@@ -49,9 +49,9 @@ const data = ref<DashboardData>({
 const cards = computed(() => [
   { key: 'article', label: '文章', value: data.value.articleCount, icon: FileText },
   { key: 'friend', label: '友链', value: data.value.friendCount, icon: Link },
-  { key: 'message', label: '留言', value: data.value.messageCount, icon: Message },
-  { key: 'comment', label: '评论', value: data.value.commentCount, icon: MessageCircle },
-  { key: 'black', label: '黑名单', value: data.value.blackCount, icon: Ban },
+  { key: 'message', label: '未处理留言', value: data.value.messageCount, icon: Message },
+  { key: 'comment', label: '未处理评论', value: data.value.commentCount, icon: MessageCircle },
+  { key: 'black', label: '今日黑名单', value: data.value.blackCount, icon: Ban },
   { key: 'error', label: '错误日志', value: data.value.errorLogCount, icon: AlertTriangle },
 ])
 

@@ -8,7 +8,9 @@ import com.qcloud.cos.ClientConfig;
 import com.qcloud.cos.auth.BasicCOSCredentials;
 import com.qcloud.cos.auth.COSCredentials;
 import com.qcloud.cos.exception.CosClientException;
+import com.qcloud.cos.exception.MultiObjectDeleteException;
 import com.qcloud.cos.http.HttpProtocol;
+import com.qcloud.cos.model.DeleteObjectsRequest;
 import com.qcloud.cos.model.ObjectMetadata;
 import com.qcloud.cos.model.PutObjectRequest;
 import com.qcloud.cos.region.Region;
@@ -26,6 +28,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.io.ByteArrayInputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -110,6 +114,50 @@ public class CosObjectStorage implements ObjectStorage {
         } catch (CosClientException e) {
             log.warn("腾讯 COS 删除失败 key={}", key, e);
             logService.recordFail("删除文件", "key=" + key, e);
+            throw new BizException(ErrorCode.COS_DELETE_FAILED, e);
+        }
+    }
+
+    @Override
+    public void deleteAll(List<String> keys) {
+        List<String> unique = ObjectStorage.distinctKeys(keys);
+        if (unique.isEmpty()) {
+            return;
+        }
+        if (unique.size() == 1) {
+            delete(unique.get(0));
+            return;
+        }
+        for (int from = 0; from < unique.size(); from += ObjectStorage.MAX_DELETE_BATCH) {
+            deleteChunk(unique.subList(from, Math.min(from + ObjectStorage.MAX_DELETE_BATCH, unique.size())));
+        }
+    }
+
+    private void deleteChunk(List<String> keys) {
+        DeleteObjectsRequest request = new DeleteObjectsRequest(bucket);
+        List<DeleteObjectsRequest.KeyVersion> keyList = new ArrayList<>(keys.size());
+        for (String key : keys) {
+            keyList.add(new DeleteObjectsRequest.KeyVersion(key));
+        }
+        request.setKeys(keyList);
+        try {
+            client.deleteObjects(request);
+        } catch (MultiObjectDeleteException e) {
+            List<String> failed = new ArrayList<>();
+            if (e.getErrors() != null) {
+                for (MultiObjectDeleteException.DeleteError error : e.getErrors()) {
+                    log.warn("腾讯 COS 批量删除失败 key={} code={} msg={}", error.getKey(), error.getCode(), error.getMessage());
+                    if (error.getKey() != null) {
+                        failed.add(error.getKey());
+                    }
+                }
+            }
+            String detail = failed.isEmpty() ? "keys=" + String.join(",", keys) : "keys=" + String.join(",", failed);
+            logService.recordFail("删除文件", detail, e);
+            throw new BizException(ErrorCode.COS_DELETE_FAILED, e);
+        } catch (CosClientException e) {
+            log.warn("腾讯 COS 批量删除失败 keys={}", keys, e);
+            logService.recordFail("删除文件", "keys=" + String.join(",", keys), e);
             throw new BizException(ErrorCode.COS_DELETE_FAILED, e);
         }
     }

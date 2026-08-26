@@ -69,13 +69,37 @@ onBeforeRouteUpdate((to, from) => {
   unlockTimer = window.setTimeout(pageReady, 3000)
 })
 
+function imageViewerOpen() {
+  return Boolean(document.querySelector('.el-image-viewer__wrapper'))
+}
+
+function stopPageScroll(event: Event) {
+  if (!imageViewerOpen()) return
+  event.preventDefault()
+}
+
+function stopPageScrollKeys(event: KeyboardEvent) {
+  if (!imageViewerOpen()) return
+  if ([' ', 'PageUp', 'PageDown', 'Home', 'End', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+    event.preventDefault()
+  }
+}
+
+const viewerScrollLock: AddEventListenerOptions = { passive: false, capture: true }
+
 onMounted(() => {
   window.addEventListener('scroll', onScroll, { passive: true })
+  window.addEventListener('wheel', stopPageScroll, viewerScrollLock)
+  window.addEventListener('touchmove', stopPageScroll, viewerScrollLock)
+  window.addEventListener('keydown', stopPageScrollKeys, viewerScrollLock)
   onScroll()
 })
 
 onUnmounted(() => {
   window.removeEventListener('scroll', onScroll)
+  window.removeEventListener('wheel', stopPageScroll, viewerScrollLock)
+  window.removeEventListener('touchmove', stopPageScroll, viewerScrollLock)
+  window.removeEventListener('keydown', stopPageScrollKeys, viewerScrollLock)
   window.clearTimeout(unlockTimer)
   window.clearTimeout(hideTimer)
 })

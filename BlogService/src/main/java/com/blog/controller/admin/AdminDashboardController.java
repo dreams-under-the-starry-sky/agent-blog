@@ -1,7 +1,7 @@
 package com.blog.controller.admin;
 
 import com.blog.dto.DashboardVO;
-import com.blog.service.MiscService;
+import com.blog.service.DashboardService;
 import jakarta.annotation.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,10 +12,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/admin")
 public class AdminDashboardController {
     @Resource
-    private MiscService miscService;
+    private DashboardService dashboardService;
 
     @GetMapping("/dashboard")
     public ResponseEntity<DashboardVO> dashboard() {
-        return ResponseEntity.ok(miscService.dashboard());
+        return ResponseEntity.ok(dashboardService.dashboard());
     }
 }

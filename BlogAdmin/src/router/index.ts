@@ -30,7 +30,6 @@ const router = createRouter({
         { path: 'web-update-logs', meta: { title: '功能日志' }, component: () => import('@/views/WebUpdateLogs.vue') },
         { path: 'emails', meta: { title: '邮件记录' }, component: () => import('@/views/Emails.vue') },
         { path: 'email-fails', meta: { title: '失败邮件' }, component: () => import('@/views/EmailFails.vue') },
-        { path: 'file-fails', meta: { title: '删除失败' }, component: () => import('@/views/FileFails.vue') },
       ],
     },
     { path: '/:pathMatch(.*)*', redirect: '/login' },

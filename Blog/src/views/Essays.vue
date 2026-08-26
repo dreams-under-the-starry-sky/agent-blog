@@ -5,7 +5,8 @@ import 'vue-waterfall-plugin-next/dist/style.css'
 import { frontApi } from '@/api/front'
 import type { Essay, PageResult } from '@/api/types'
 import FrameBtn from '@/components/FrameBtn.vue'
-import { formatTime, mediaUrl } from '@/utils/format'
+import Calendar from '@vicons/tabler/es/Calendar'
+import { formatDate, mediaUrl } from '@/utils/format'
 import { usePageReady } from '@/utils/pageReady'
 
 const PAGE_SIZE = 10
@@ -96,12 +97,17 @@ onMounted(load)
               :src="imgSrc(img)"
               :preview-src-list="previewList(item.images)"
               :initial-index="i"
+              :infinite=false
+              :close-on-press-escape="false"
               :fit="item.images.length === 1 ? 'contain' : 'cover'"
               preview-teleported
               @load="relayout"
             />
           </div>
-          <time>{{ formatTime(item.createTime) }}</time>
+          <time>
+            <Calendar class="tabler-icon" />
+            <span>{{ formatDate(item.createTime) }}</span>
+          </time>
         </article>
       </template>
     </Waterfall>
@@ -147,7 +153,26 @@ p { margin: 0; color: var(--c-text-1); white-space: pre-wrap; word-break: break-
   width: 100%;
   height: 100%;
 }
-time { display: inline-block; margin-top: 0.6rem; color: var(--c-text-2); font-size: calc(0.85rem + 2px); }
+time {
+  display: flex;
+  align-items: center;
+  gap: 0.22rem;
+  margin-top: 1rem;
+  line-height: 1;
+  color: var(--c-text-2);
+  font-size: calc(0.85rem + 2px);
+}
+
+time :deep(svg) {
+  width: 1em;
+  height: 1em;
+  display: block;
+}
+
+time span {
+  position: relative;
+  top: 0.08em;
+}
 .more-wrap {
   display: flex;
   justify-content: center;

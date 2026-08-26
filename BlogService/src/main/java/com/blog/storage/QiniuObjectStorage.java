@@ -3,11 +3,13 @@ package com.blog.storage;
 import com.blog.common.BizException;
 import com.blog.common.ErrorCode;
 import com.blog.service.LogService;
+import com.qiniu.common.QiniuException;
 import com.qiniu.http.Response;
 import com.qiniu.storage.BucketManager;
 import com.qiniu.storage.Configuration;
 import com.qiniu.storage.Region;
 import com.qiniu.storage.UploadManager;
+import com.qiniu.storage.model.BatchStatus;
 import com.qiniu.util.Auth;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
@@ -17,6 +19,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 @ConditionalOnProperty(name = "blog.storage.type", havingValue = "qiniu")
@@ -84,6 +89,82 @@ public class QiniuObjectStorage implements ObjectStorage {
             log.warn("七牛云删除失败 key={}", key, e);
             logService.recordFail("删除文件", "key=" + key, e);
             throw new BizException(ErrorCode.QINIU_DELETE_FAILED, e);
+        }
+    }
+
+    @Override
+    public void deleteAll(List<String> keys) {
+        List<String> unique = ObjectStorage.distinctKeys(keys);
+        if (unique.isEmpty()) {
+            return;
+        }
+        if (unique.size() == 1) {
+            delete(unique.get(0));
+            return;
+        }
+        for (int from = 0; from < unique.size(); from += ObjectStorage.MAX_DELETE_BATCH) {
+            deleteChunk(unique.subList(from, Math.min(from + ObjectStorage.MAX_DELETE_BATCH, unique.size())));
+        }
+    }
+
+    private void deleteChunk(List<String> keys) {
+        BucketManager.BatchOperations ops = new BucketManager.BatchOperations();
+        ops.addDeleteOp(bucket, keys.toArray(String[]::new));
+        try {
+            Response resp = bucketManager.batch(ops);
+            if (resp == null || (resp.statusCode != 200 && resp.statusCode != 298)) {
+                String detail = resp == null
+                        ? "keys=" + String.join(",", keys) + " 七牛云返回为空"
+                        : "keys=" + String.join(",", keys) + " status=" + resp.statusCode + " " + resp.error;
+                log.warn("七牛云批量删除失败 {}", detail);
+                logService.recordFail("删除文件", detail);
+                throw new BizException(ErrorCode.QINIU_DELETE_FAILED);
+            }
+            applyBatchStatuses(keys, parseStatuses(resp));
+        } catch (QiniuException e) {
+            if (e.response != null && (e.response.statusCode == 200 || e.response.statusCode == 298)) {
+                try {
+                    applyBatchStatuses(keys, parseStatuses(e.response));
+                    return;
+                } catch (QiniuException parseError) {
+                    e = parseError;
+                }
+            }
+            log.warn("七牛云批量删除失败 keys={}", keys, e);
+            logService.recordFail("删除文件", "keys=" + String.join(",", keys), e);
+            throw new BizException(ErrorCode.QINIU_DELETE_FAILED, e);
+        } catch (BizException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("七牛云批量删除失败 keys={}", keys, e);
+            logService.recordFail("删除文件", "keys=" + String.join(",", keys), e);
+            throw new BizException(ErrorCode.QINIU_DELETE_FAILED, e);
+        }
+    }
+
+    private static BatchStatus[] parseStatuses(Response resp) throws QiniuException {
+        if (resp == null) {
+            return new BatchStatus[0];
+        }
+        BatchStatus[] statuses = resp.jsonToObject(BatchStatus[].class);
+        return statuses == null ? new BatchStatus[0] : statuses;
+    }
+
+    private void applyBatchStatuses(List<String> keys, BatchStatus[] statuses) {
+        List<String> failed = new ArrayList<>();
+        for (int i = 0; i < keys.size(); i++) {
+            BatchStatus status = i < statuses.length ? statuses[i] : null;
+            int code = status == null ? 0 : status.code;
+            if (code == 200 || code == 612) {
+                continue;
+            }
+            String err = status != null && status.data != null ? status.data.error : "unknown";
+            log.warn("七牛云批量删除失败 key={} code={} error={}", keys.get(i), code, err);
+            failed.add(keys.get(i));
+        }
+        if (!failed.isEmpty()) {
+            logService.recordFail("删除文件", "keys=" + String.join(",", failed));
+            throw new BizException(ErrorCode.QINIU_DELETE_FAILED);
         }
     }
 

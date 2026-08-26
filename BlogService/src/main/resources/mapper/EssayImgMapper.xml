@@ -5,6 +5,15 @@
         SELECT id, essay_id, img_url, thumbnail_url FROM blog_essay_img WHERE essay_id = #{essayId}
     </select>
 
+    <select id="selectByEssayIds" resultType="com.blog.entity.EssayImg">
+        SELECT id, essay_id, img_url, thumbnail_url FROM blog_essay_img
+        WHERE essay_id IN
+        <foreach collection="essayIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY id ASC
+    </select>
+
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO blog_essay_img (essay_id, img_url, thumbnail_url)
         VALUES (#{essayId}, #{imgUrl}, #{thumbnailUrl})

@@ -33,6 +33,14 @@ public class FrontReplyLimitService {
     @Resource
     private LogService logService;
 
+    public void assertVisitorAllowed(HttpServletRequest request, String nickname, String email) {
+        String ip = CommentService.clientIp(request);
+        if (blackMapper.countMatch(ip, nickname, email) > 0) {
+            throw new BizException(ErrorCode.USER_BLACKLISTED);
+        }
+        assertAllowed(request, nickname, email);
+    }
+
     public void assertAllowed(HttpServletRequest request, String nickname, String email) {
         String ip = CommentService.clientIp(request);
         LocalDateTime start = LocalDate.now().atStartOfDay();

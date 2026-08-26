@@ -146,3 +146,36 @@ html.dark .el-textarea__inner,
 html.dark .el-alert__title {
   color: var(--c-text-2);
 }
+
+/* 图片预览按钮背景默认用 --el-text-color-regular；暗色下该变量是浅字色，白图标会看不见。 */
+.el-image-viewer__wrapper {
+  --el-text-color-regular: rgb(0 0 0 / 0.62);
+  --el-text-color-primary: #fff;
+  color: #fff;
+}
+
+.el-image-viewer__close,
+.el-image-viewer__prev,
+.el-image-viewer__next,
+.el-image-viewer__actions {
+  background-color: rgb(0 0 0 / 0.62);
+  color: #fff;
+}
+
+.el-image-viewer__actions__inner,
+.el-image-viewer__btn,
+.el-image-viewer__wrapper .el-icon,
+.el-image-viewer__wrapper svg {
+  color: #fff;
+}
+
+/* 预览不要锁滚动条。关闭后 Element Plus 还会把 hidden class 再留约 200ms，
+   必须绑这个 class，不能只看 wrapper 是否在 DOM，否则滚动条会闪一下。 */
+body.el-image-viewer-parent--hidden {
+  overflow: auto !important;
+  width: auto !important;
+}
+
+.el-image-viewer__wrapper {
+  overscroll-behavior: contain;
+}

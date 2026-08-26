@@ -1,5 +1,7 @@
 package com.blog.service;
 
+import com.blog.common.PageQuery;
+import com.blog.common.PageResult;
 import com.blog.entity.BlogLog;
 import com.blog.mapper.BlogLogMapper;
 import jakarta.annotation.Resource;
@@ -14,6 +16,10 @@ public class LogService {
 
     @Resource
     private BlogLogMapper blogLogMapper;
+
+    public PageResult<BlogLog> page(PageQuery query) {
+        return new PageResult<>(blogLogMapper.countPage(query), blogLogMapper.selectPage(query));
+    }
 
     public void record(String event, String status, String detail) {
         BlogLog row = new BlogLog();
@@ -57,7 +63,7 @@ public class LogService {
             builder.append(current.getClass().getSimpleName());
             String message = current.getMessage();
             if (StringUtils.hasText(message)) {
-                builder.append(": ").append(message.replaceAll("\\s+", " ").trim());
+                builder.append(": ").append(sanitize(message.replaceAll("\\s+", " ").trim()));
             }
             Throwable cause = current.getCause();
             if (cause == null || cause == current) {
@@ -66,6 +72,13 @@ public class LogService {
             current = cause;
         }
         return builder.isEmpty() ? error.getClass().getSimpleName() : builder.toString();
+    }
+
+    private static String sanitize(String message) {
+        String value = message.replaceAll(
+                "(?i)((?:password|passwd|secret|token|authorization|api[_-]?key)\\s*[=:]\\s*)[^\\s,;]+",
+                "$1*");
+        return value.replaceAll("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}", "*@*");
     }
 
     private static String join(String hint, String detail) {
@@ -82,6 +95,7 @@ public class LogService {
         if (detail == null) {
             return null;
         }
-        return detail.length() > 255 ? detail.substring(0, 255) : detail;
+        String value = sanitize(detail);
+        return value.length() > 255 ? value.substring(0, 255) : value;
     }
 }

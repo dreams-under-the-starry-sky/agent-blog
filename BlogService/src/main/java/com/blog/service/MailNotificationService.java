@@ -57,6 +57,10 @@ public class MailNotificationService {
         return new PageResult<>(emailFailMapper.countPage(query), emailFailMapper.selectPage(query));
     }
 
+    public PageResult<EmailRecord> page(PageQuery query) {
+        return new PageResult<>(emailRecordMapper.countPage(query), emailRecordMapper.selectPage(query));
+    }
+
     public void notifyCommentReply(Comment reply) {
         if (reply == null || !shouldNotify(reply.getParentId(), reply.getHandle(), reply.getSend(), reply.getVisible())) {
             return;

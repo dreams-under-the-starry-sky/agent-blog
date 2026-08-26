@@ -18,7 +18,7 @@ const auth = useAuthStore()
 const theme = useThemeStore()
 const settingsOpen = ref(false)
 
-const FRONT_URL = `${location.protocol}//${location.hostname}:5173`
+const FRONT_URL = `https://crossroads.net.cn`
 const GITHUB_URL = 'https://github.com/dreams-under-the-starry-sky/agent-blog'
 
 const activeMenu = computed(() => {

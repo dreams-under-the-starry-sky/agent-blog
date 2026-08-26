@@ -2,28 +2,8 @@ package com.blog.service;
 
 import com.blog.common.BizException;
 import com.blog.common.ErrorCode;
-import com.blog.common.IdGenerator;
-import com.blog.common.PageQuery;
-import com.blog.common.PageResult;
-import com.blog.dto.DashboardVO;
+import com.blog.common.ImageUrls;
 import com.blog.dto.UploadResult;
-import com.blog.entity.Black;
-import com.blog.entity.BlogLog;
-import com.blog.entity.EmailRecord;
-import com.blog.entity.FileDelFail;
-import com.blog.entity.Friend;
-import com.blog.entity.FriendCategory;
-import com.blog.entity.Music;
-import com.blog.mapper.ArticleMapper;
-import com.blog.mapper.BlackMapper;
-import com.blog.mapper.BlogLogMapper;
-import com.blog.mapper.CommentMapper;
-import com.blog.mapper.EmailRecordMapper;
-import com.blog.mapper.FileDelFailMapper;
-import com.blog.mapper.FriendCategoryMapper;
-import com.blog.mapper.FriendMapper;
-import com.blog.mapper.MessageMapper;
-import com.blog.mapper.MusicMapper;
 import com.blog.storage.ObjectStorage;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
@@ -39,32 +19,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 public class MiscService {
     private static final Logger log = LoggerFactory.getLogger(MiscService.class);
-    @Resource
-    private FriendMapper friendMapper;
-    @Resource
-    private FriendCategoryMapper friendCategoryMapper;
-    @Resource
-    private MusicMapper musicMapper;
-    @Resource
-    private BlackMapper blackMapper;
-    @Resource
-    private BlogLogMapper blogLogMapper;
-    @Resource
-    private EmailRecordMapper emailRecordMapper;
-    @Resource
-    private FileDelFailMapper fileDelFailMapper;
-    @Resource
-    private ArticleMapper articleMapper;
-    @Resource
-    private CommentMapper commentMapper;
-    @Resource
-    private MessageMapper messageMapper;
+
     @Resource
     private AvifCompressor avifCompressor;
     @Resource
@@ -85,129 +50,6 @@ public class MiscService {
     public void initUploadRoot() {
         this.uploadRoot = Paths.get(uploadDir).toAbsolutePath().normalize();
         log.info("当前文件存储: {}", objectStorage.getClass().getSimpleName());
-    }
-
-    public List<Friend> friends() {
-        return friendMapper.selectAll();
-    }
-
-    public Long saveFriend(Friend friend) {
-        if (friend.getCategoryId() != null) {
-            FriendCategory category = friendCategoryMapper.selectById(friend.getCategoryId());
-            if (category != null && category.getSort() != null) {
-                friend.setSort(category.getSort());
-            }
-        }
-        if (friend.getSort() == null) {
-            friend.setSort(99);
-        }
-        if (friend.getId() == null) {
-            friend.setId(IdGenerator.nextId());
-            friendMapper.insert(friend);
-        } else {
-            friendMapper.update(friend);
-        }
-        return friend.getId();
-    }
-
-    public void deleteFriend(Long id) {
-        friendMapper.deleteById(id);
-    }
-
-    public List<FriendCategory> friendCategories() {
-        return friendCategoryMapper.selectAll();
-    }
-
-    public Long saveFriendCategory(FriendCategory category) {
-        category.setName(category.getName().trim());
-        if (friendCategoryMapper.countByName(category.getName(), category.getId()) > 0) {
-            throw new BizException(ErrorCode.CATEGORY_NAME_EXISTS);
-        }
-        if (category.getSort() == null) {
-            category.setSort(99);
-        }
-        if (category.getId() == null) {
-            category.setId(IdGenerator.nextId());
-            friendCategoryMapper.insert(category);
-        } else {
-            friendCategoryMapper.update(category);
-        }
-        return category.getId();
-    }
-
-    public void deleteFriendCategory(Long id) {
-        if (friendMapper.countByCategoryId(id) > 0) {
-            throw new BizException(ErrorCode.CATEGORY_HAS_FRIENDS);
-        }
-        friendCategoryMapper.deleteById(id);
-    }
-
-    public List<Music> musicList() {
-        return musicMapper.selectAll();
-    }
-
-    public Long saveMusic(Music music) {
-        music.setName(music.getName().trim());
-        music.setAuthor(trimToNull(music.getAuthor()));
-        music.setUrl(music.getUrl().trim());
-        music.setCover(trimToNull(music.getCover()));
-        music.setLrc(trimToNull(music.getLrc()));
-        if (music.getId() == null) {
-            music.setId(IdGenerator.nextId());
-            musicMapper.insert(music);
-        } else {
-            musicMapper.update(music);
-        }
-        return music.getId();
-    }
-
-    public void deleteMusic(Long id) {
-        musicMapper.deleteById(id);
-    }
-
-    public List<Black> blacks() {
-        return blackMapper.selectAll();
-    }
-
-    public Integer saveBlack(Black black) {
-        if (black.getId() == null) {
-            black.setId((int) (System.currentTimeMillis() / 1000));
-        }
-        blackMapper.insert(black);
-        return black.getId();
-    }
-
-    public void deleteBlack(Integer id) {
-        blackMapper.deleteById(id);
-    }
-
-    public PageResult<BlogLog> logs(PageQuery query) {
-        return new PageResult<>(blogLogMapper.countPage(query), blogLogMapper.selectPage(query));
-    }
-
-    public PageResult<EmailRecord> emails(PageQuery query) {
-        return new PageResult<>(emailRecordMapper.countPage(query), emailRecordMapper.selectPage(query));
-    }
-
-    public List<FileDelFail> fileDelFails() {
-        return fileDelFailMapper.selectAll();
-    }
-
-    public void deleteFileDelFail(Integer id) {
-        fileDelFailMapper.deleteById(id);
-    }
-
-    public DashboardVO dashboard() {
-        DashboardVO vo = new DashboardVO();
-        vo.setArticleCount(articleMapper.countAll());
-        vo.setFriendCount(friendMapper.countAll());
-        vo.setMessageCount(messageMapper.countAll());
-        vo.setCommentCount(commentMapper.countAll());
-        vo.setBlackCount(blackMapper.countAll());
-        vo.setErrorLogCount(blogLogMapper.countFailed());
-        vo.setHotArticles(articleMapper.selectHot(10));
-        vo.setRecentBlacks(blackMapper.selectSince(LocalDate.now().minusDays(1).atStartOfDay()));
-        return vo;
     }
 
     public UploadResult upload(MultipartFile file) {
@@ -262,31 +104,46 @@ public class MiscService {
         if (urls == null) {
             return;
         }
+        tryDeleteFiles(Arrays.asList(urls));
+    }
+
+    public void tryDeleteFiles(Collection<String> urls) {
+        if (urls == null || urls.isEmpty()) {
+            return;
+        }
+        LinkedHashSet<String> keys = new LinkedHashSet<>();
+        List<String> leftovers = new ArrayList<>();
         for (String url : urls) {
-            tryDeleteFile(url);
+            if (!StringUtils.hasText(url)) {
+                continue;
+            }
+            String key = objectStorage.extractKey(url);
+            if (StringUtils.hasText(key)) {
+                keys.add(key);
+            } else {
+                leftovers.add(url);
+            }
+        }
+        if (!keys.isEmpty()) {
+            try {
+                objectStorage.deleteAll(new ArrayList<>(keys));
+            } catch (Exception e) {
+                log.warn("批量删除文件失败 keys={}", keys, e);
+                logService.recordFail("删除文件", String.join(",", keys), e);
+            }
+        }
+        for (String url : leftovers) {
+            try {
+                deleteLegacyLocal(url);
+            } catch (Exception e) {
+                log.warn("删除文件失败 url={}", url, e);
+                logService.recordFail("删除文件", url, e);
+            }
         }
     }
 
     public void tryDeleteFile(String url) {
-        if (!StringUtils.hasText(url)) {
-            return;
-        }
-        try {
-            String key = objectStorage.extractKey(url);
-            if (StringUtils.hasText(key)) {
-                objectStorage.delete(key);
-                return;
-            }
-            deleteLegacyLocal(url);
-        } catch (Exception e) {
-            log.warn("删除文件失败 url={}", url, e);
-            String extra = e instanceof BizException biz ? biz.getErrorCode().getMessage() : ErrorCode.FILE_DELETE_FAILED.getMessage();
-            logService.recordFail("删除文件", url, e);
-            FileDelFail fail = new FileDelFail();
-            fail.setFileKey(url.length() > 60 ? url.substring(0, 60) : url);
-            fail.setExtra(extra);
-            fileDelFailMapper.insert(fail);
-        }
+        tryDeleteFiles(url);
     }
 
     private void deleteLegacyLocal(String url) throws IOException {
@@ -332,16 +189,6 @@ public class MiscService {
     }
 
     public String clipUrl(String url) {
-        if (url == null) {
-            return null;
-        }
-        return url.length() > 80 ? url.substring(0, 80) : url;
-    }
-
-    private String trimToNull(String value) {
-        if (!StringUtils.hasText(value)) {
-            return null;
-        }
-        return value.trim();
+        return ImageUrls.clip(url);
     }
 }

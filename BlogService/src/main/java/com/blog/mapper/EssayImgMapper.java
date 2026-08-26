@@ -10,6 +10,8 @@ import java.util.List;
 public interface EssayImgMapper {
     List<EssayImg> selectByEssayId(@Param("essayId") Long essayId);
 
+    List<EssayImg> selectByEssayIds(@Param("essayIds") List<Long> essayIds);
+
     int insert(EssayImg img);
 
     int deleteByEssayId(@Param("essayId") Long essayId);

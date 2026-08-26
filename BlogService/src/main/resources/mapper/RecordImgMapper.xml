@@ -5,6 +5,15 @@
         SELECT id, record_id, img_url, thumbnail_url FROM blog_record_img WHERE record_id = #{recordId}
     </select>
 
+    <select id="selectByRecordIds" resultType="com.blog.entity.RecordImg">
+        SELECT id, record_id, img_url, thumbnail_url FROM blog_record_img
+        WHERE record_id IN
+        <foreach collection="recordIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY id ASC
+    </select>
+
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO blog_record_img (record_id, img_url, thumbnail_url)
         VALUES (#{recordId}, #{imgUrl}, #{thumbnailUrl})

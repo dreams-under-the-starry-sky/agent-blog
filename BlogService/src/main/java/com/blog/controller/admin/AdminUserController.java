@@ -7,8 +7,8 @@ import com.blog.dto.ReviewRequest;
 import com.blog.entity.Friend;
 import com.blog.entity.FriendCategory;
 import com.blog.entity.Message;
+import com.blog.service.FriendService;
 import com.blog.service.MessageService;
-import com.blog.service.MiscService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -31,7 +31,7 @@ public class AdminUserController {
     @Resource
     private MessageService messageService;
     @Resource
-    private MiscService miscService;
+    private FriendService friendService;
 
     @GetMapping("/messages")
     public ResponseEntity<PageResult<Message>> messages(PageQuery query) {
@@ -70,33 +70,33 @@ public class AdminUserController {
 
     @GetMapping("/friends")
     public ResponseEntity<List<Friend>> friends() {
-        return ResponseEntity.ok(miscService.friends());
+        return ResponseEntity.ok(friendService.friends());
     }
 
     @PostMapping("/friends")
     public ResponseEntity<Long> saveFriend(@RequestBody Friend friend) {
-        return ResponseEntity.ok(miscService.saveFriend(friend));
+        return ResponseEntity.ok(friendService.saveFriend(friend));
     }
 
     @DeleteMapping("/friends/{id}")
     public ResponseEntity<Void> deleteFriend(@PathVariable Long id) {
-        miscService.deleteFriend(id);
+        friendService.deleteFriend(id);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/friend-categories")
     public ResponseEntity<List<FriendCategory>> friendCategories() {
-        return ResponseEntity.ok(miscService.friendCategories());
+        return ResponseEntity.ok(friendService.friendCategories());
     }
 
     @PostMapping("/friend-categories")
     public ResponseEntity<Long> saveFriendCategory(@Valid @RequestBody FriendCategory category) {
-        return ResponseEntity.ok(miscService.saveFriendCategory(category));
+        return ResponseEntity.ok(friendService.saveFriendCategory(category));
     }
 
     @DeleteMapping("/friend-categories/{id}")
     public ResponseEntity<Void> deleteFriendCategory(@PathVariable Long id) {
-        miscService.deleteFriendCategory(id);
+        friendService.deleteFriendCategory(id);
         return ResponseEntity.ok().build();
     }
 }

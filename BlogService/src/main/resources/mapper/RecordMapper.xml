@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.blog.mapper.RecordMapper">
-    <select id="selectPage" resultType="com.blog.entity.Record">
-        SELECT r.id, r.category_id, r.happen_time, r.content, r.status, r.create_time, r.update_time,
-               c.name AS category_name
-        FROM blog_record r
-        LEFT JOIN blog_record_category c ON r.category_id = c.id
+    <sql id="BaseWhere">
         <where>
             <if test="status != null">
                 AND r.status = #{status}
@@ -14,20 +10,21 @@
                 AND r.content LIKE CONCAT('%', #{keyword}, '%')
             </if>
         </where>
+    </sql>
+
+    <select id="selectPage" resultType="com.blog.entity.Record">
+        SELECT r.id, r.category_id, r.happen_time, r.content, r.status, r.create_time, r.update_time,
+               c.name AS category_name
+        FROM blog_record r
+        LEFT JOIN blog_record_category c ON r.category_id = c.id
+        <include refid="BaseWhere"/>
         ORDER BY r.id DESC
         LIMIT #{offset}, #{limit}
     </select>
 
     <select id="countPage" resultType="long">
         SELECT COUNT(1) FROM blog_record r
-        <where>
-            <if test="status != null">
-                AND r.status = #{status}
-            </if>
-            <if test="keyword != null and keyword != ''">
-                AND r.content LIKE CONCAT('%', #{keyword}, '%')
-            </if>
-        </where>
+        <include refid="BaseWhere"/>
     </select>
 
     <select id="selectById" resultType="com.blog.entity.Record">

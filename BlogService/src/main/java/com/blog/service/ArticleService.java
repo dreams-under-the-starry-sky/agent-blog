@@ -3,6 +3,7 @@ package com.blog.service;
 import com.blog.common.BizException;
 import com.blog.common.ErrorCode;
 import com.blog.common.IdGenerator;
+import com.blog.common.ImageUrls;
 import com.blog.common.MarkdownExcerpt;
 import com.blog.common.PageQuery;
 import com.blog.common.PageResult;
@@ -91,8 +92,8 @@ public class ArticleService {
         article.setCategoryId(req.getCategoryId());
         article.setTitle(req.getTitle());
         article.setDescription(resolveDescription(req.getDescription(), req.getContent()));
-        article.setCover(trimUrl(req.getCover()));
-        article.setThumbnail(trimUrl(req.getThumbnail() != null ? req.getThumbnail() : req.getCover()));
+        article.setCover(ImageUrls.clip(req.getCover()));
+        article.setThumbnail(ImageUrls.clip(req.getThumbnail() != null ? req.getThumbnail() : req.getCover()));
         article.setComment(req.getComment() == null ? 1 : req.getComment());
         article.setStatus(req.getStatus() == null ? 0 : req.getStatus());
         article.setRecommend(req.getRecommend() == null ? 0 : req.getRecommend());
@@ -113,12 +114,14 @@ public class ArticleService {
             contentMapper.insert(content);
         } else {
             if (!Objects.equals(old.getCover(), article.getCover()) || !Objects.equals(old.getThumbnail(), article.getThumbnail())) {
+                List<String> unusedCovers = new ArrayList<>();
                 if (!stillUsed(article.getCover(), article.getThumbnail(), nextImages, old.getCover())) {
-                    miscService.tryDeleteFile(old.getCover());
+                    unusedCovers.add(old.getCover());
                 }
                 if (!stillUsed(article.getCover(), article.getThumbnail(), nextImages, old.getThumbnail())) {
-                    miscService.tryDeleteFile(old.getThumbnail());
+                    unusedCovers.add(old.getThumbnail());
                 }
+                miscService.tryDeleteFiles(unusedCovers);
             }
             deleteUnusedImages(oldImages, nextImages, article.getCover(), article.getThumbnail());
             articleMapper.update(article);
@@ -145,8 +148,8 @@ public class ArticleService {
         for (ImageSaveItem item : nextImages) {
             ArticleImg img = new ArticleImg();
             img.setArticleId(article.getId());
-            img.setImgUrl(trimUrl(item.getImgUrl()));
-            img.setThumbnailUrl(trimUrl(item.getThumbnailUrl() != null ? item.getThumbnailUrl() : item.getImgUrl()));
+            img.setImgUrl(ImageUrls.clip(item.getImgUrl()));
+            img.setThumbnailUrl(ImageUrls.clip(item.getThumbnailUrl() != null ? item.getThumbnailUrl() : item.getImgUrl()));
             articleImgMapper.insert(img);
         }
         refreshCategoryCount(req.getCategoryId());
@@ -164,10 +167,14 @@ public class ArticleService {
             return;
         }
         List<ArticleImg> images = articleImgMapper.selectByArticleId(id);
+        List<String> urls = new ArrayList<>();
         for (ArticleImg img : images) {
-            miscService.tryDeleteFiles(img.getImgUrl(), img.getThumbnailUrl());
+            urls.add(img.getImgUrl());
+            urls.add(img.getThumbnailUrl());
         }
-        miscService.tryDeleteFiles(old.getCover(), old.getThumbnail());
+        urls.add(old.getCover());
+        urls.add(old.getThumbnail());
+        miscService.tryDeleteFiles(urls);
         contentMapper.deleteByArticleId(id);
         articleTagMapper.deleteByArticleId(id);
         articleImgMapper.deleteByArticleId(id);
@@ -217,15 +224,15 @@ public class ArticleService {
         Set<String> seen = new HashSet<>();
         Matcher matcher = MD_IMAGE.matcher(content == null ? "" : content);
         while (matcher.find()) {
-            String url = trimUrl(matcher.group(1));
+            String url = ImageUrls.clip(matcher.group(1));
             if (url == null || !seen.add(url)) {
                 continue;
             }
             ImageSaveItem uploadedItem = byUrl.get(url);
             ImageSaveItem item = new ImageSaveItem();
             if (uploadedItem != null) {
-                item.setImgUrl(trimUrl(uploadedItem.getImgUrl()));
-                item.setThumbnailUrl(trimUrl(uploadedItem.getThumbnailUrl() != null
+                item.setImgUrl(ImageUrls.clip(uploadedItem.getImgUrl()));
+                item.setThumbnailUrl(ImageUrls.clip(uploadedItem.getThumbnailUrl() != null
                         ? uploadedItem.getThumbnailUrl() : uploadedItem.getImgUrl()));
             } else {
                 item.setImgUrl(url);
@@ -237,55 +244,28 @@ public class ArticleService {
     }
 
     private void deleteOrphanUploads(List<ImageSaveItem> uploaded, List<ImageSaveItem> nextImages, String cover, String thumbnail) {
-        Set<String> keep = keepSet(nextImages, cover, thumbnail);
+        Set<String> keep = ImageUrls.keepSet(nextImages, cover, thumbnail);
         if (uploaded == null) {
             return;
         }
+        List<String> urls = new ArrayList<>();
         for (ImageSaveItem item : uploaded) {
-            if (item.getImgUrl() != null && !keep.contains(item.getImgUrl())) {
-                miscService.tryDeleteFile(item.getImgUrl());
-            }
-            if (item.getThumbnailUrl() != null && !keep.contains(item.getThumbnailUrl())) {
-                miscService.tryDeleteFile(item.getThumbnailUrl());
-            }
+            ImageUrls.addUnused(urls, item.getImgUrl(), item.getThumbnailUrl(), keep);
         }
+        miscService.tryDeleteFiles(urls);
     }
 
     private void deleteUnusedImages(List<ArticleImg> oldImages, List<ImageSaveItem> nextImages, String cover, String thumbnail) {
-        Set<String> keep = keepSet(nextImages, cover, thumbnail);
+        Set<String> keep = ImageUrls.keepSet(nextImages, cover, thumbnail);
+        List<String> urls = new ArrayList<>();
         for (ArticleImg img : oldImages) {
-            if (!keep.contains(img.getImgUrl())) {
-                miscService.tryDeleteFile(img.getImgUrl());
-            }
-            if (!keep.contains(img.getThumbnailUrl())) {
-                miscService.tryDeleteFile(img.getThumbnailUrl());
-            }
+            ImageUrls.addUnused(urls, img.getImgUrl(), img.getThumbnailUrl(), keep);
         }
+        miscService.tryDeleteFiles(urls);
     }
 
     private boolean stillUsed(String cover, String thumbnail, List<ImageSaveItem> nextImages, String url) {
-        return keepSet(nextImages, cover, thumbnail).contains(url);
-    }
-
-    private Set<String> keepSet(List<ImageSaveItem> nextImages, String cover, String thumbnail) {
-        Set<String> keep = new HashSet<>();
-        if (cover != null) {
-            keep.add(cover);
-        }
-        if (thumbnail != null) {
-            keep.add(thumbnail);
-        }
-        if (nextImages != null) {
-            for (ImageSaveItem item : nextImages) {
-                if (item.getImgUrl() != null) {
-                    keep.add(item.getImgUrl());
-                }
-                if (item.getThumbnailUrl() != null) {
-                    keep.add(item.getThumbnailUrl());
-                }
-            }
-        }
-        return keep;
+        return ImageUrls.keepSet(nextImages, cover, thumbnail).contains(url);
     }
 
     private String resolveDescription(String description, String content) {
@@ -297,12 +277,5 @@ public class ArticleService {
             return null;
         }
         return value.length() > DESCRIPTION_MAX ? value.substring(0, DESCRIPTION_MAX) : value;
-    }
-
-    private String trimUrl(String url) {
-        if (url == null) {
-            return null;
-        }
-        return url.length() > 80 ? url.substring(0, 80) : url;
     }
 }

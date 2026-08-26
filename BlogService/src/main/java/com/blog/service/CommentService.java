@@ -9,7 +9,6 @@ import com.blog.dto.CommentSubmitRequest;
 import com.blog.entity.Article;
 import com.blog.entity.Comment;
 import com.blog.mapper.ArticleMapper;
-import com.blog.mapper.BlackMapper;
 import com.blog.mapper.CommentMapper;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,8 +33,6 @@ public class CommentService {
     private CommentMapper commentMapper;
     @Resource
     private ArticleMapper articleMapper;
-    @Resource
-    private BlackMapper blackMapper;
     @Resource
     private IpLocationService ipLocationService;
     @Resource
@@ -66,16 +63,15 @@ public class CommentService {
             throw new BizException(ErrorCode.COMMENT_CLOSED);
         }
         String ip = clientIp(request);
-        // assertNotBlacklisted(ip, req.getNickname(), req.getEmail());
         if (!asBlogger) {
-            // frontReplyLimitService.assertAllowed(request, req.getNickname(), req.getEmail());
+            frontReplyLimitService.assertVisitorAllowed(request, req.getNickname(), req.getEmail());
         }
         Comment comment = new Comment();
         comment.setId(IdGenerator.nextId());
         comment.setArticleId(req.getArticleId());
         comment.setContent(req.getContent());
         comment.setBlogger(asBlogger ? 1 : 0);
-        fillReplyMeta(comment, req.getParentId());
+        Comment parent = fillReplyMeta(comment, req.getParentId());
         comment.setNickname(asBlogger ? siteTitle : trim(req.getNickname(), 20));
         comment.setEmail(trim(asBlogger && !StringUtils.hasText(req.getEmail()) ? mailUsername : req.getEmail(), 30));
         comment.setWebsite(trim(req.getWebsite(), 50));
@@ -97,13 +93,15 @@ public class CommentService {
             articleMapper.incrementComments(req.getArticleId(), 1);
         }
         if (asBlogger && req.getParentId() != null) {
-            Comment parent = commentMapper.selectById(req.getParentId());
             commentMapper.updateHandle(req.getParentId(), 1);
             if (parent != null && !frontVisible(parent.getHandle(), parent.getVisible())
                     && Integer.valueOf(1).equals(parent.getVisible())) {
                 articleMapper.incrementComments(req.getArticleId(), 1);
             }
-            mailNotificationService.notifyCommentReply(commentMapper.selectById(req.getParentId()));
+            if (parent != null) {
+                parent.setHandle(1);
+                mailNotificationService.notifyCommentReply(parent);
+            }
             mailNotificationService.notifyCommentReply(comment);
         }
     }
@@ -118,14 +116,16 @@ public class CommentService {
             throw new BizException(ErrorCode.COMMENT_PARENT_NOT_FOUND);
         }
         int visible = approved ? 1 : 0;
-        commentMapper.updateReview(id, visible);
         boolean wasShown = frontVisible(old.getHandle(), old.getVisible());
+        commentMapper.updateReview(id, visible);
+        old.setHandle(1);
+        old.setVisible(visible);
         boolean nowShown = approved;
         if (old.getArticleId() != null && wasShown != nowShown) {
             articleMapper.incrementComments(old.getArticleId(), nowShown ? 1 : -1);
         }
         if (approved) {
-            mailNotificationService.notifyCommentReply(commentMapper.selectById(id));
+            mailNotificationService.notifyCommentReply(old);
         }
     }
 
@@ -143,16 +143,10 @@ public class CommentService {
         visible(id, 0);
     }
 
-    private void assertNotBlacklisted(String ip, String nickname, String email) {
-        if (blackMapper.countMatch(ip, nickname, email) > 0) {
-            throw new BizException(ErrorCode.USER_BLACKLISTED);
-        }
-    }
-
-    private void fillReplyMeta(Comment comment, Long parentId) {
+    private Comment fillReplyMeta(Comment comment, Long parentId) {
         if (parentId == null) {
             comment.setRootId(comment.getId());
-            return;
+            return null;
         }
         Comment parent = commentMapper.selectById(parentId);
         if (parent == null) {
@@ -161,6 +155,7 @@ public class CommentService {
         comment.setParentId(parent.getId());
         comment.setParentNickname(parent.getNickname());
         comment.setRootId(parent.getRootId() != null ? parent.getRootId() : parent.getId());
+        return parent;
     }
 
     private List<Comment> toTree(List<Comment> list) {

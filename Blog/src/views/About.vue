@@ -14,7 +14,7 @@ usePageReadyOnMount()
       <ul>
         <li><b>昵称：</b>{{ siteConfig.title }}</li>
         <li><b>邮箱：</b>{{ BLOGGER_EMAIL }}</li>
-        <li><b>为什么取这个名字：</b>人生就是无数个十字路口，别想太多，选一个看得顺眼的就行 🤪</li>
+        <li><b>为什么取这个名字：</b>长路漫漫，唯键作伴 🤪</li>
       </ul>
     </section>
 

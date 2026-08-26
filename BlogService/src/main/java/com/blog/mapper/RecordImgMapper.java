@@ -10,6 +10,8 @@ import java.util.List;
 public interface RecordImgMapper {
     List<RecordImg> selectByRecordId(@Param("recordId") Long recordId);
 
+    List<RecordImg> selectByRecordIds(@Param("recordIds") List<Long> recordIds);
+
     int insert(RecordImg img);
 
     int deleteByRecordId(@Param("recordId") Long recordId);

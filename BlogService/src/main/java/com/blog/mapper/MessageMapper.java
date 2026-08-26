@@ -9,8 +9,6 @@ import java.util.List;
 
 @Mapper
 public interface MessageMapper {
-    List<Message> selectVisible();
-
     List<Message> selectVisibleByPageId(@Param("pageId") Integer pageId);
 
     List<Message> selectPage(PageQuery query);

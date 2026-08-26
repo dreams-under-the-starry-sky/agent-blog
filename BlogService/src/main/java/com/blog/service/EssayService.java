@@ -1,6 +1,7 @@
 package com.blog.service;
 
 import com.blog.common.IdGenerator;
+import com.blog.common.ImageUrls;
 import com.blog.common.PageQuery;
 import com.blog.common.PageResult;
 import com.blog.dto.ImageSaveItem;
@@ -12,8 +13,10 @@ import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -27,7 +30,7 @@ public class EssayService {
 
     public PageResult<Essay> page(PageQuery query) {
         List<Essay> list = essayMapper.selectPage(query);
-        list.forEach(e -> e.setImages(essayImgMapper.selectByEssayId(e.getId())));
+        fillImages(list);
         return new PageResult<>(essayMapper.countPage(query), list);
     }
 
@@ -61,8 +64,8 @@ public class EssayService {
             }
             EssayImg img = new EssayImg();
             img.setEssayId(essay.getId());
-            img.setImgUrl(miscService.clipUrl(item.getImgUrl()));
-            img.setThumbnailUrl(miscService.clipUrl(item.getThumbnailUrl() != null ? item.getThumbnailUrl() : item.getImgUrl()));
+            img.setImgUrl(ImageUrls.clip(item.getImgUrl()));
+            img.setThumbnailUrl(ImageUrls.clip(item.getThumbnailUrl() != null ? item.getThumbnailUrl() : item.getImgUrl()));
             essayImgMapper.insert(img);
         }
         return essay.getId();
@@ -71,30 +74,37 @@ public class EssayService {
     @Transactional
     public void delete(Long id) {
         List<EssayImg> images = essayImgMapper.selectByEssayId(id);
+        List<String> urls = new ArrayList<>();
         for (EssayImg img : images) {
-            miscService.tryDeleteFiles(img.getImgUrl(), img.getThumbnailUrl());
+            urls.add(img.getImgUrl());
+            urls.add(img.getThumbnailUrl());
         }
+        miscService.tryDeleteFiles(urls);
         essayImgMapper.deleteByEssayId(id);
         essayMapper.deleteById(id);
     }
 
+    private void fillImages(List<Essay> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        List<Long> ids = list.stream().map(Essay::getId).toList();
+        List<EssayImg> images = essayImgMapper.selectByEssayIds(ids);
+        Map<Long, List<EssayImg>> grouped = new LinkedHashMap<>();
+        for (EssayImg img : images) {
+            grouped.computeIfAbsent(img.getEssayId(), key -> new ArrayList<>()).add(img);
+        }
+        for (Essay essay : list) {
+            essay.setImages(grouped.getOrDefault(essay.getId(), List.of()));
+        }
+    }
+
     private void deleteUnused(List<EssayImg> oldImages, List<ImageSaveItem> next) {
-        Set<String> keep = new HashSet<>();
-        for (ImageSaveItem item : next) {
-            if (item.getImgUrl() != null) {
-                keep.add(item.getImgUrl());
-            }
-            if (item.getThumbnailUrl() != null) {
-                keep.add(item.getThumbnailUrl());
-            }
-        }
+        Set<String> keep = ImageUrls.keepSet(next);
+        List<String> urls = new ArrayList<>();
         for (EssayImg img : oldImages) {
-            if (!keep.contains(img.getImgUrl())) {
-                miscService.tryDeleteFile(img.getImgUrl());
-            }
-            if (!keep.contains(img.getThumbnailUrl())) {
-                miscService.tryDeleteFile(img.getThumbnailUrl());
-            }
+            ImageUrls.addUnused(urls, img.getImgUrl(), img.getThumbnailUrl(), keep);
         }
+        miscService.tryDeleteFiles(urls);
     }
 }

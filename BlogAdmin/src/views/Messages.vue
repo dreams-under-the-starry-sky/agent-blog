@@ -8,7 +8,7 @@ import { PAGE_SIZE } from '@/utils/page'
 import { tableTime } from '@/utils/format'
 
 const page = ref(1)
-const handle = ref<number | undefined>()
+const handle = ref<number | undefined>(0)
 const deleted = ref<number | undefined>()
 const notice = ref<number | undefined>()
 const send = ref<number | undefined>()
@@ -34,7 +34,7 @@ async function load() {
 }
 
 function resetFilters() {
-  handle.value = undefined
+  handle.value = 0
   deleted.value = undefined
   notice.value = undefined
   send.value = undefined

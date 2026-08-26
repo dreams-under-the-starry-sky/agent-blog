@@ -22,9 +22,10 @@ import com.blog.entity.WebUpdateLog;
 import com.blog.service.ArticleService;
 import com.blog.service.CommentService;
 import com.blog.service.EssayService;
+import com.blog.service.FriendService;
 import com.blog.service.MessageService;
 import com.blog.service.MetaService;
-import com.blog.service.MiscService;
+import com.blog.service.MusicService;
 import com.blog.service.QqInfoService;
 import com.blog.service.RecordService;
 import com.blog.service.WebUpdateLogService;
@@ -61,7 +62,9 @@ public class FrontController {
     @Resource
     private RecordService recordService;
     @Resource
-    private MiscService miscService;
+    private FriendService friendService;
+    @Resource
+    private MusicService musicService;
     @Resource
     private WebUpdateLogService webUpdateLogService;
     @Resource
@@ -152,17 +155,17 @@ public class FrontController {
 
     @GetMapping("/friends")
     public ResponseEntity<List<Friend>> friends() {
-        return ResponseEntity.ok(miscService.friends());
+        return ResponseEntity.ok(friendService.friends());
     }
 
     @GetMapping("/friend-categories")
     public ResponseEntity<List<FriendCategory>> friendCategories() {
-        return ResponseEntity.ok(miscService.friendCategories());
+        return ResponseEntity.ok(friendService.friendCategories());
     }
 
     @GetMapping("/music")
     public ResponseEntity<List<Music>> music() {
-        return ResponseEntity.ok(miscService.musicList());
+        return ResponseEntity.ok(musicService.list());
     }
 
     @GetMapping("/web-update-logs")
