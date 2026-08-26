@@ -6,14 +6,22 @@ import { frontApi } from '@/api/front'
 import type { Essay, PageResult } from '@/api/types'
 import FrameBtn from '@/components/FrameBtn.vue'
 import Calendar from '@vicons/tabler/es/Calendar'
+import Photo from '@vicons/tabler/es/Photo'
+import Rotate from '@vicons/tabler/es/Rotate'
+import RotateClockwise from '@vicons/tabler/es/RotateClockwise'
+import ZoomIn from '@vicons/tabler/es/ZoomIn'
+import ZoomOut from '@vicons/tabler/es/ZoomOut'
 import { formatDate, mediaUrl } from '@/utils/format'
 import { usePageReady } from '@/utils/pageReady'
+
+type EssayImg = NonNullable<Essay['images']>[number]
 
 const PAGE_SIZE = 10
 const page = ref(1)
 const data = ref<PageResult<Essay>>({ total: 0, list: [] })
 const waterfallRef = ref<{ renderer: () => void } | null>(null)
 const loadingMore = ref(false)
+const previewByEssay = ref<Record<number, string[]>>({})
 const beginReady = usePageReady()
 const loadedAll = computed(() => data.value.total > 0 && data.value.list.length >= data.value.total)
 
@@ -47,12 +55,30 @@ function relayout() {
   waterfallRef.value?.renderer()
 }
 
-function imgSrc(img: { imgUrl?: string; thumbnailUrl?: string }) {
+function imgSrc(img: EssayImg) {
   return mediaUrl(img.thumbnailUrl || img.imgUrl)
 }
 
-function previewList(images?: Essay['images']) {
-  return (images || []).map(imgSrc)
+function originalSrc(img: EssayImg) {
+  return mediaUrl(img.imgUrl || img.thumbnailUrl)
+}
+
+function previewList(item: Essay) {
+  return previewByEssay.value[item.id] ?? (item.images || []).map(imgSrc)
+}
+
+function showingOriginal(item: Essay, index: number) {
+  const img = item.images?.[index]
+  if (!img) return true
+  return previewList(item)[index] === originalSrc(img)
+}
+
+function loadOriginal(item: Essay, index: number) {
+  const img = item.images?.[index]
+  if (!img || showingOriginal(item, index)) return
+  const list = [...previewList(item)]
+  list[index] = originalSrc(img)
+  previewByEssay.value = { ...previewByEssay.value, [item.id]: list }
 }
 
 function imgsClass(count: number) {
@@ -95,14 +121,32 @@ onMounted(load)
               v-for="(img, i) in item.images"
               :key="i"
               :src="imgSrc(img)"
-              :preview-src-list="previewList(item.images)"
+              :preview-src-list="previewList(item)"
               :initial-index="i"
-              :infinite=false
+              :infinite="false"
               :close-on-press-escape="false"
               :fit="item.images.length === 1 ? 'contain' : 'cover'"
               preview-teleported
               @load="relayout"
-            />
+            >
+              <template #toolbar="{ actions, reset, activeIndex }">
+                <el-icon @click="actions('zoomOut')"><ZoomOut /></el-icon>
+                <el-icon @click="actions('zoomIn')"><ZoomIn /></el-icon>
+                <i class="el-image-viewer__actions__divider" />
+                <i class="el-image-viewer__actions__divider" />
+                <el-icon @click="actions('anticlockwise')"><Rotate /></el-icon>
+                <el-icon @click="actions('clockwise')"><RotateClockwise /></el-icon>
+                <i class="el-image-viewer__actions__divider" />
+                <el-icon
+                  class="orig-btn"
+                  :class="{ 'is-on': showingOriginal(item, activeIndex) }"
+                  title="查看原图"
+                  @click.stop="loadOriginal(item, activeIndex)"
+                >
+                  <Photo />
+                </el-icon>
+              </template>
+            </el-image>
           </div>
           <time>
             <Calendar class="tabler-icon" />
@@ -177,5 +221,11 @@ time span {
   display: flex;
   justify-content: center;
   margin-top: 1.5rem;
+}
+
+.orig-btn.is-on {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
 }
 </style>

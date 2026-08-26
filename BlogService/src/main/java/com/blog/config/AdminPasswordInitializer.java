@@ -19,17 +19,25 @@ public class AdminPasswordInitializer {
     public ApplicationRunner resetAdminPasswordIfNeeded(
             UserMapper userMapper,
             PasswordEncoder passwordEncoder,
-            @Value("${blog.admin.reset-password:}") String resetPassword) {
+            @Value("${blog.admin.reset-password:}") String resetPassword,
+            @Value("${blog.admin.username:}") String username) {
         return args -> {
-            if (!StringUtils.hasText(resetPassword)) {
+            if (!StringUtils.hasText(resetPassword) || !StringUtils.hasText(username)) {
                 return;
             }
-            User admin = userMapper.findByUsername("admin");
+            User admin = userMapper.findByUsername(username);
+            String encoded = passwordEncoder.encode(resetPassword);
             if (admin == null) {
-                log.warn("admin user not found, skip password reset");
+                admin = new User();
+                admin.setUsername(username);
+                admin.setPassword(encoded);
+                admin.setRole(32);
+                admin.setDisable(false);
+                userMapper.insert(admin);
+                log.info("admin user created by blog.admin.reset-password");
                 return;
             }
-            userMapper.updatePassword(admin.getId(), passwordEncoder.encode(resetPassword));
+            userMapper.updatePassword(admin.getId(), encoded);
             log.info("admin password has been reset by blog.admin.reset-password");
         };
     }

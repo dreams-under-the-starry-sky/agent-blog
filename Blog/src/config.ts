@@ -12,13 +12,13 @@ export const siteConfig = {
 
 /** 前台各页 pageId；目前仅留言板、友链开放 blog_message 评论 */
 export const PAGE_IDS = {
-  home: 10,
-  category: 11,
-  tag: 12,
-  archive: 13,
-  essays: 14,
-  records: 15,
-  about: 16,
+  home: 29,
+  category: 30,
+  tag: 31,
+  archive: 32,
+  essays: 33,
+  records: 34,
+  about: 35,
   friends: 36,
   messages: 37,
 } as const

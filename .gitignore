@@ -38,6 +38,7 @@ dist/
 *.iml
 .vscode/
 .cursor/
+BlogService/.idea/
 
 # Uploads
 BlogService/uploads/**

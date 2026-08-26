@@ -179,3 +179,13 @@ body.el-image-viewer-parent--hidden {
 .el-image-viewer__wrapper {
   overscroll-behavior: contain;
 }
+
+.el-image-viewer__actions__inner .orig-btn {
+  cursor: pointer;
+}
+
+.el-image-viewer__actions__inner .orig-btn.is-on {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}

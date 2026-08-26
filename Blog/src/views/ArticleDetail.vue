@@ -17,6 +17,22 @@ const rendered = computed(() => renderArticle(article.value?.content, article.va
 const html = computed(() => rendered.value.html)
 const tocHeadings = inject<Ref<Heading[]>>('tocHeadings')
 const beginReady = usePageReady()
+const coverSrc = ref('')
+
+watch(
+  () => [article.value?.thumbnail, article.value?.cover],
+  () => {
+    coverSrc.value = mediaUrl(article.value?.thumbnail || article.value?.cover)
+  },
+  { immediate: true },
+)
+
+function onCoverError() {
+  const fallback = mediaUrl(article.value?.cover)
+  if (fallback && coverSrc.value !== fallback) {
+    coverSrc.value = fallback
+  }
+}
 
 async function load() {
   const pageReady = beginReady()
@@ -40,7 +56,13 @@ onUnmounted(() => {
 
 <template>
   <article v-if="article" class="post">
-    <img v-if="article.cover || article.thumbnail" class="cover" :src="mediaUrl(article.thumbnail || article.cover)" :alt="article.title" />
+    <img
+      v-if="article.cover || article.thumbnail"
+      class="cover"
+      :src="coverSrc"
+      :alt="article.title"
+      @error="onCoverError"
+    />
     <h1>{{ article.title }}</h1>
     <div class="meta">
       <time>

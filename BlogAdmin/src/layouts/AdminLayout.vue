@@ -10,7 +10,7 @@ import Settings from '@vicons/tabler/es/Settings'
 import { useAuthStore } from '@/stores/auth'
 import { THEME_COLORS, useThemeStore } from '@/stores/theme'
 import { findMenuLeaf, menus } from './menus'
-import avatarImg from '@/assets/avatar.jpg'
+import avatarImg from '@/assets/siteAvatar.jpg'
 
 const route = useRoute()
 const router = useRouter()

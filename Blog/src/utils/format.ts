@@ -19,6 +19,11 @@ export function mediaUrl(url?: string) {
   return `/uploads/${url}`
 }
 
+/** 展示优先缩略图；失败时由调用方回退到 fallback。 */
+export function displayMediaUrl(preferred?: string, fallback?: string) {
+  return mediaUrl(preferred || fallback)
+}
+
 export function readingMeta(text?: string) {
   const chars = (text || '').replace(/\s/g, '').length
   const minutes = Math.max(1, Math.round(chars / 400) || 1)

@@ -23,4 +23,9 @@
     <update id="updateUsername">
         UPDATE blog_user SET username = #{username} WHERE id = #{id}
     </update>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO blog_user (username, password, role, disable)
+        VALUES (#{username}, #{password}, #{role}, #{disable})
+    </insert>
 </mapper>

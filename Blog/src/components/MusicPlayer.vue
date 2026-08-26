@@ -12,7 +12,7 @@ import Volume2 from '@vicons/tabler/es/Volume2'
 import { frontApi } from '@/api/front'
 import type { Music as MusicItem } from '@/api/types'
 import { mediaUrl } from '@/utils/format'
-import defaultCover from '@/assets/default-music-bg.png'
+import defaultCover from '@/assets/music-avatar.jpg'
 
 type PlayMode = 'loop' | 'single' | 'random'
 

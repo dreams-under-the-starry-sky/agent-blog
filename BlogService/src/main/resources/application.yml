@@ -78,6 +78,7 @@ blog:
     site-url: ${BLOG_SITE_URL:}
   # 首次启动会把 admin 密码重置为下面的明文，便于本地登录；真实值放 application-local.yml
   admin:
+    username: ${BLOG_ADMIN_USERNAME:}
     reset-password: ${BLOG_ADMIN_RESET_PASSWORD:}
   map:
     qq-key: ${BLOG_MAP_QQ_KEY:}

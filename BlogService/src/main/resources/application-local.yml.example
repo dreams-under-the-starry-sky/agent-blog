@@ -11,6 +11,7 @@ blog:
   jwt:
     secret: change-me-to-a-long-random-string
   admin:
+    username: ""
     reset-password: ""
   map:
     qq-key: ""

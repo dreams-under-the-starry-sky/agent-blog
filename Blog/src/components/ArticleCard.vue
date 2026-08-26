@@ -1,10 +1,32 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue'
 import Calendar from '@vicons/tabler/es/Calendar'
 import Bookmark from '@vicons/tabler/es/Bookmark'
 import type { Article } from '@/api/types'
-import { formatDate, mediaUrl } from '@/utils/format'
+import defaultCover from '@/assets/default-article-cover.png'
+import { displayMediaUrl, formatDate, mediaUrl } from '@/utils/format'
 
-defineProps<{ article: Article }>()
+const props = defineProps<{ article: Article }>()
+const coverSrc = ref('')
+
+watch(
+  () => [props.article.thumbnail, props.article.cover],
+  () => {
+    coverSrc.value = displayMediaUrl(props.article.thumbnail, props.article.cover) || defaultCover
+  },
+  { immediate: true },
+)
+
+function onCoverError() {
+  const fallback = mediaUrl(props.article.cover)
+  if (fallback && coverSrc.value !== fallback) {
+    coverSrc.value = fallback
+    return
+  }
+  if (coverSrc.value !== defaultCover) {
+    coverSrc.value = defaultCover
+  }
+}
 </script>
 
 <template>
@@ -21,8 +43,8 @@ defineProps<{ article: Article }>()
       </div>
       <p class="excerpt">{{ article.description }}</p>
     </div>
-    <div v-if="article.cover || article.thumbnail" class="cover">
-      <img :src="mediaUrl(article.thumbnail || article.cover)" :alt="article.title" />
+    <div class="cover">
+      <img :src="coverSrc" :alt="article.title" @error="onCoverError" />
     </div>
   </RouterLink>
 </template>
