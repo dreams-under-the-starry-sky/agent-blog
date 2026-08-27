@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static com.blog.common.RequestUserAgent.*;
+
 @Service
 public class MessageService {
     private static final Set<Integer> FRONT_PAGE_IDS = Set.of(36, 37);
@@ -29,12 +31,12 @@ public class MessageService {
     @Resource
     private IpLocationService ipLocationService;
     @Resource
-    private FrontReplyLimitService frontReplyLimitService;
-    @Resource
     private MailNotificationService mailNotificationService;
-    @Value("${spring.mail.username:}")
+    @Resource
+    private FrontReplyLimitService frontReplyLimitService;
+    @Value("${spring.mail.username}")
     private String mailUsername;
-    @Value("${blog.site.title:长路漫漫}")
+    @Value("${blog.site.title}")
     private String siteTitle;
     @Value("${blog.site.msg-avatar}")
     private String msgAvatar;
@@ -57,7 +59,7 @@ public class MessageService {
     }
 
     public void submit(MessageSubmitRequest req, HttpServletRequest request, boolean asBlogger) {
-        String ip = CommentService.clientIp(request);
+        String ip = clientIp(request);
         if (!asBlogger) {
             frontReplyLimitService.assertVisitorAllowed(request, req.getNickname(), req.getEmail());
         }
@@ -73,18 +75,18 @@ public class MessageService {
             }
             message.setPageId(pageId);
         }
-        message.setNickname(asBlogger ? siteTitle : CommentService.trim(req.getNickname(), 20));
-        message.setEmail(CommentService.trim(asBlogger && !StringUtils.hasText(req.getEmail()) ? mailUsername : req.getEmail(), 30));
-        message.setWebsite(CommentService.trim(req.getWebsite(), 50));
-        message.setAvatar(asBlogger ? msgAvatar : CommentService.trim(req.getAvatar(), 255));
+        message.setNickname(asBlogger ? siteTitle : trim(req.getNickname(), 20));
+        message.setEmail(trim(asBlogger && !StringUtils.hasText(req.getEmail()) ? mailUsername : req.getEmail(), 30));
+        message.setWebsite(trim(req.getWebsite(), 50));
+        message.setAvatar(asBlogger ? msgAvatar : trim(req.getAvatar(), 255));
         message.setHandle(asBlogger ? 1 : 0);
         message.setNotice(req.getNotice() == null ? 0 : req.getNotice());
         message.setSend(0);
         message.setVisible(1);
         String ua = request.getHeader("User-Agent");
-        message.setBrowser(CommentService.trim(CommentService.parseBrowser(ua), 50));
-        message.setSystemInfo(CommentService.trim(CommentService.parseOs(request), 20));
-        message.setIp(CommentService.trim(ip, 15));
+        message.setBrowser(trim(parseBrowser(ua), 50));
+        message.setSystemInfo(trim(parseOs(request), 20));
+        message.setIp(trim(ip, 15));
         IpLocationService.Location location = ipLocationService.lookup(ip);
         message.setProvince(location.province());
         message.setCity(location.city());

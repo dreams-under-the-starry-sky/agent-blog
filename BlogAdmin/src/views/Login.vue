@@ -10,7 +10,7 @@ import loginBg from '@/assets/admin-login-bg.jpg'
 const router = useRouter()
 const auth = useAuthStore()
 const loading = ref(false)
-const form = reactive({ username: 'admin', password: '' })
+const form = reactive({ username: '', password: '' })
 
 onMounted(() => {
   document.documentElement.style.overflow = 'hidden'

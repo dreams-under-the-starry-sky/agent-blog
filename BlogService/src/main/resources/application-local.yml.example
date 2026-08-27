@@ -25,6 +25,8 @@ blog:
     bucket: ""
     region: ""
     cdn-domain: ""
+  cors:
+    origins: http://localhost:80,http://127.0.0.1:80
   qiniu:
     access-key: ""
     secret-key: ""

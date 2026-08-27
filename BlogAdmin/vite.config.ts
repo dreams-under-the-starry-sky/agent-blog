@@ -30,7 +30,7 @@ export default defineConfig({
   },
   server: {
     host: 'localhost',
-    port: 5174,
+    port: 80,
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:8080/agent-blog/server',

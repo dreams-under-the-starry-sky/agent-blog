@@ -17,6 +17,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static com.blog.common.RequestUserAgent.clientIp;
+import static com.blog.common.RequestUserAgent.trim;
+
 @Service
 public class FrontReplyLimitService {
     private static final Logger log = LoggerFactory.getLogger(FrontReplyLimitService.class);
@@ -34,7 +37,7 @@ public class FrontReplyLimitService {
     private LogService logService;
 
     public void assertVisitorAllowed(HttpServletRequest request, String nickname, String email) {
-        String ip = CommentService.clientIp(request);
+        String ip = clientIp(request);
         if (blackMapper.countMatch(ip, nickname, email) > 0) {
             throw new BizException(ErrorCode.USER_BLACKLISTED);
         }
@@ -42,7 +45,7 @@ public class FrontReplyLimitService {
     }
 
     public void assertAllowed(HttpServletRequest request, String nickname, String email) {
-        String ip = CommentService.clientIp(request);
+        String ip = clientIp(request);
         LocalDateTime start = LocalDate.now().atStartOfDay();
         int byIp = commentMapper.countByIpSince(ip, start) + messageMapper.countByIpSince(ip, start);
         int byEmail = 0;
@@ -66,10 +69,10 @@ public class FrontReplyLimitService {
             String position = join(location.province(), location.city(), location.district());
             Black black = new Black();
             black.setId((int) (System.currentTimeMillis() / 1000) + ThreadLocalRandom.current().nextInt(10, 99));
-            black.setIp(CommentService.trim(ip, 15));
-            black.setPosition(CommentService.trim(position, 50));
-            black.setNickname(CommentService.trim(nickname, 20));
-            black.setEmail(CommentService.trim(email, 30));
+            black.setIp(trim(ip, 15));
+            black.setPosition(trim(position, 50));
+            black.setNickname(trim(nickname, 20));
+            black.setEmail(trim(email, 30));
             blackMapper.insert(black);
             logService.record("加入黑名单", "成功", ip);
         } catch (Exception e) {

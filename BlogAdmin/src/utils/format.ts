@@ -7,7 +7,8 @@ function fromJacksonArray(value: number[]) {
 
 export function formatTime(value?: string | number | Date | number[] | null) {
   if (value == null || value === '') return ''
-  if (Array.isArray(value) && value.length >= 3) {
+  if (Array.isArray(value)) {
+    if (value.length < 3) return ''
     const parsed = fromJacksonArray(value)
     return parsed.isValid() ? parsed.format('YYYY-MM-DD HH:mm:ss') : ''
   }

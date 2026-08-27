@@ -24,6 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
+import static com.blog.common.RequestUserAgent.clientIp;
+
 @Service
 public class QqInfoService {
     private static final Logger log = LoggerFactory.getLogger(QqInfoService.class);
@@ -53,7 +55,7 @@ public class QqInfoService {
         if (!QQ_PATTERN.matcher(qq).matches()) {
             throw new BizException(ErrorCode.PARAM_INVALID);
         }
-        assertIpInterval(CommentService.clientIp(request));
+        assertIpInterval(clientIp(request));
         if (!dailyQuotaService.tryAcquireQq(DAILY_LIMIT)) {
             throw new BizException(ErrorCode.QQ_QUERY_LIMITED);
         }
