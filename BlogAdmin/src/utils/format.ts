@@ -22,8 +22,17 @@ export function formatTime(value?: string | number | Date | number[] | null) {
   return parsed.isValid() ? parsed.format('YYYY-MM-DD HH:mm:ss') : String(value)
 }
 
+export function formatDate(value?: string | number | Date | number[] | null) {
+  const text = formatTime(value)
+  return text ? text.slice(0, 10) : ''
+}
+
 export function tableTime(_row: unknown, _column: unknown, cellValue: unknown) {
   return formatTime(cellValue as string | number | Date | number[] | null)
+}
+
+export function tableDate(_row: unknown, _column: unknown, cellValue: unknown) {
+  return formatDate(cellValue as string | number | Date | number[] | null)
 }
 
 export function mediaUrl(url?: string) {

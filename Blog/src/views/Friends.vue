@@ -206,10 +206,16 @@ mark {
   }
 
   img {
+    flex-shrink: 0;
     width: 3rem;
     height: 3rem;
     border-radius: 0.5rem;
     object-fit: cover;
+  }
+
+  > div {
+    min-width: 0;
+    flex: 1;
   }
 
   strong {
@@ -217,9 +223,17 @@ mark {
   }
 
   p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
     margin: 0.35rem 0 0;
     color: var(--c-text-2);
     font-size: calc(0.85rem + 2px);
+    line-height: 1.45;
   }
 }
 </style>

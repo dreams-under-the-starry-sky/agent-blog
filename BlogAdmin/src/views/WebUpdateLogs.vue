@@ -4,14 +4,14 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { adminApi } from '@/api/admin'
 import CrudPage from '@/components/CrudPage.vue'
 import { filterPage } from '@/utils/page'
-import { tableTime } from '@/utils/format'
+import { formatDate, tableDate, tableTime } from '@/utils/format'
 
 const all = ref<any[]>([])
 const keyword = ref('')
 const applied = ref('')
 const page = ref(1)
 const visible = ref(false)
-const form = reactive({ id: undefined as number | undefined, title: '', description: '' })
+const form = reactive({ id: undefined as number | undefined, title: '', description: '', eventDate: '' })
 const view = computed(() => filterPage(all.value, applied.value, page.value, ['title', 'description']))
 
 async function load() {
@@ -24,16 +24,22 @@ function open(row?: any) {
   form.id = row?.id
   form.title = row?.title || ''
   form.description = row?.description || ''
+  form.eventDate = formatDate(row?.eventDate)
   visible.value = true
 }
 async function save() {
   const title = form.title.trim()
+  const eventDate = (form.eventDate || '').trim()
   if (!title) {
     ElMessage.warning('请输入标题')
     return
   }
+  if (!eventDate) {
+    ElMessage.warning('请选择事件时间')
+    return
+  }
   try {
-    await adminApi.saveWebUpdateLog({ ...form, title, description: form.description.trim() })
+    await adminApi.saveWebUpdateLog({ ...form, title, description: form.description.trim(), eventDate })
     ElMessage.success('已保存')
     visible.value = false
     await load()
@@ -67,6 +73,7 @@ onMounted(load)
   >
     <el-table-column prop="title" label="标题" />
     <el-table-column prop="description" label="更新介绍" show-overflow-tooltip />
+    <el-table-column prop="eventDate" label="事件时间" :formatter="tableDate" />
     <el-table-column prop="createTime" label="创建时间" :formatter="tableTime" />
     <el-table-column prop="updateTime" label="修改时间" :formatter="tableTime" />
     <el-table-column label="操作">
@@ -79,6 +86,15 @@ onMounted(load)
       <el-dialog v-model="visible" title="功能日志" width="520px" align-center>
         <el-form label-width="80px">
           <el-form-item label="标题"><el-input v-model="form.title" maxlength="80" /></el-form-item>
+          <el-form-item label="事件时间">
+            <el-date-picker
+              v-model="form.eventDate"
+              type="date"
+              value-format="YYYY-MM-DD"
+              placeholder="选择事件时间"
+              style="width: 100%"
+            />
+          </el-form-item>
           <el-form-item label="介绍">
             <el-input v-model="form.description" type="textarea" :rows="4" maxlength="500" show-word-limit />
           </el-form-item>

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { applyHljsTheme } from '@/utils/hljsTheme'
 
 const DARK_KEY = 'blog_front_dark'
 const COLOR_KEY = 'blog_front_color'
@@ -82,6 +83,7 @@ export const useThemeStore = defineStore('theme', () => {
     const parsed = parseHex(color.value)
     hue.value = rgbToHue(parsed.r, parsed.g, parsed.b)
     root.classList.toggle('dark', dark.value)
+    applyHljsTheme(dark.value)
     root.style.setProperty('--hue', String(hue.value))
     root.style.setProperty('--primary', color.value)
     root.style.setProperty('--btn-content', parsed.solid)

@@ -1,6 +1,19 @@
-import { marked } from 'marked'
+import hljs from 'highlight.js/lib/common'
+import { Marked } from 'marked'
+import { markedHighlight } from 'marked-highlight'
 
-marked.setOptions({
+const parser = new Marked(
+  markedHighlight({
+    emptyLangClass: 'hljs',
+    langPrefix: 'hljs language-',
+    highlight(code, lang) {
+      const language = lang && hljs.getLanguage(lang) ? lang : 'plaintext'
+      return hljs.highlight(code, { language }).value
+    },
+  }),
+)
+
+parser.setOptions({
   gfm: true,
   breaks: true,
 })
@@ -24,7 +37,7 @@ function slugify(text: string, used: Map<string, number>) {
 }
 
 export function renderMarkdown(source?: string) {
-  return marked.parse(source || '', { async: false }) as string
+  return parser.parse(source || '', { async: false }) as string
 }
 
 function withThumbnails(source?: string, images?: { imgUrl?: string; thumbnailUrl?: string }[]) {

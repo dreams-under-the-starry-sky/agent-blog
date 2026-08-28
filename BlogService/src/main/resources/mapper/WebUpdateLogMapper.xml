@@ -2,19 +2,19 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.blog.mapper.WebUpdateLogMapper">
     <select id="selectAll" resultType="com.blog.entity.WebUpdateLog">
-        SELECT id, title, description, create_time, update_time
+        SELECT id, title, description, event_date, create_time, update_time
         FROM blog_web_update_log
         ORDER BY id DESC
     </select>
 
     <insert id="insert">
-        INSERT INTO blog_web_update_log (id, title, description)
-        VALUES (#{id}, #{title}, #{description})
+        INSERT INTO blog_web_update_log (id, title, description, event_date)
+        VALUES (#{id}, #{title}, #{description}, #{eventDate})
     </insert>
 
     <update id="update">
         UPDATE blog_web_update_log
-        SET title = #{title}, description = #{description}
+        SET title = #{title}, description = #{description}, event_date = #{eventDate}
         WHERE id = #{id}
     </update>
 

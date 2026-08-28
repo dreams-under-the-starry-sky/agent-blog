@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { frontApi } from '@/api/front'
 import type { WebUpdateLog } from '@/api/types'
-import { formatTime } from '@/utils/format'
+import { formatDate, formatTime } from '@/utils/format'
 import { usePageReady } from '@/utils/pageReady'
 
 const list = ref<WebUpdateLog[]>([])
@@ -27,7 +27,7 @@ onMounted(async () => {
       <article v-for="item in list" :key="item.id" class="item">
         <div class="head">
           <h2>{{ item.title }}</h2>
-          <time>{{ formatTime(item.createTime) }}</time>
+          <time>{{ item.eventDate ? formatDate(item.eventDate) : formatTime(item.createTime) }}</time>
         </div>
         <p v-if="item.description">{{ item.description }}</p>
       </article>

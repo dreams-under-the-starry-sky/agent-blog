@@ -77,6 +77,9 @@ button, input, textarea { font-family: inherit; }
     overflow: auto;
     background: var(--btn-regular-bg);
     border-radius: 12px;
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+    line-height: 1.65;
   }
   .code-block {
     position: relative;
@@ -115,13 +118,21 @@ button, input, textarea { font-family: inherit; }
     color: var(--btn-content);
   }
   code {
-    font-family: Consolas, Monaco, monospace;
+    font-family: var(--font-mono);
     color: var(--btn-content);
     background: var(--btn-regular-bg);
     border-radius: 4px;
     padding: 0 4px;
   }
-  pre code { background: transparent; padding: 0; }
+  pre code {
+    background: transparent !important;
+    padding: 0;
+    color: inherit;
+  }
+  pre code.hljs {
+    display: block;
+    overflow-x: visible;
+  }
   img {
     max-width: 100%;
     border-radius: 12px;
@@ -134,6 +145,29 @@ button, input, textarea { font-family: inherit; }
     color: var(--c-text-2);
     background: var(--btn-regular-bg);
     border-radius: 0 10px 10px 0;
+  }
+  .table-wrap {
+    overflow-x: auto;
+    margin: 1em 0;
+  }
+  table {
+    display: table;
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95em;
+    line-height: 1.6;
+  }
+  th,
+  td {
+    border: 1px solid var(--line-divider);
+    padding: 0.5em 0.8em;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--btn-regular-bg);
+    font-weight: 700;
+    color: var(--c-text-1);
   }
 }
 

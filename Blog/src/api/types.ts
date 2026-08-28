@@ -131,6 +131,7 @@ export interface WebUpdateLog {
   id: number
   title: string
   description?: string
+  eventDate?: string
   createTime?: string
   updateTime?: string
 }

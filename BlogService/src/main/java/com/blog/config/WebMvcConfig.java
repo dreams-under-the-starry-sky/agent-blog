@@ -21,7 +21,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Value("${blog.upload.dir:uploads}")
     private String uploadDir;
 
-    @Value("${blog.cors.origins:http://localhost:5173,http://localhost:5174}")
+    @Value("${blog.cors.origins:http://localhost:[*],http://127.0.0.1:[*]}")
     private String originConfig;
 
     @Override
@@ -39,7 +39,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(Arrays.stream(originConfig.split(",")).map(String::trim).toList());
+        List<String> origins = Arrays.stream(originConfig.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList();
+        config.setAllowedOriginPatterns(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

@@ -5,7 +5,7 @@ export const siteConfig = {
   author: '长路漫漫',
   bio: '记录技术、生活与沿途风景',
   github: 'https://github.com/dreams-under-the-starry-sky/agent-blog',
-  startDate: '2026-01-01',
+  startDate: '2025-04-09',
   msgAvator: 'https://myqc.net.cn/blog/head-picture.jpg',
   siteAvator: 'https://myqc.net.cn/blog/site-avatar.jpg'
 }
