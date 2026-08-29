@@ -11,7 +11,7 @@ spring:
   application:
     name: agent-blog
   config:
-    import: optional:classpath:application-local.yml
+    import: optional:classpath:application-local.yml,optional:file:./application-local.yml
   jackson:
     time-zone: Asia/Shanghai
     date-format: yyyy-MM-dd HH:mm:ss

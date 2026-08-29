@@ -95,3 +95,5 @@ Vite 把 `/api`、`/uploads` 代理到 `http://127.0.0.1:8080/agent-blog/server`
 - `blog.site.title`、`msg-avatar`、`site-url`
 
 `application.yml` 里是非密钥项（含 QQ / 地图请求 URL）。改存储类型或邮件配置后必须重启 Java。
+
+自动部署（push `main` → 服务器）见 [deploy/README.md](deploy/README.md)。

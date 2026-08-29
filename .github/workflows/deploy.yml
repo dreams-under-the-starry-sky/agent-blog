@@ -1,0 +1,117 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+      FRONT_DIR: /www/wwwroot/agent-blog
+      ADMIN_DIR: /www/wwwroot/agent-blog-admin
+      JAR_DIR: /www/wwwroot/springboot
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+          cache-dependency-path: BlogService/pom.xml
+
+      - name: Build stamp
+        run: |
+          STAMP=$(TZ=Asia/Shanghai date +%Y%m%d-%H%M%S)
+          echo "STAMP=$STAMP" >> "$GITHUB_ENV"
+          echo "本次构建时间戳 $STAMP"
+
+      - name: Build front
+        working-directory: Blog
+        run: npm ci && npm run build
+
+      - name: Build admin
+        working-directory: BlogAdmin
+        run: npm ci && npm run build
+
+      - name: Build backend jar
+        working-directory: BlogService
+        run: |
+          mvn -B -DskipTests package
+          mv target/blog-service.jar "target/blog-service-${STAMP}.jar"
+
+      - name: Pack timestamped artifacts
+        run: |
+          printf '%s\n' "$STAMP" > Blog/dist/build-stamp.txt
+          printf '%s\n' "$STAMP" > BlogAdmin/dist/build-stamp.txt
+          tar -czf "blog-${STAMP}.tar.gz" -C Blog/dist .
+          tar -czf "blog-admin-${STAMP}.tar.gz" -C BlogAdmin/dist .
+
+      - name: Upload build packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-blog-${{ env.STAMP }}
+          path: |
+            blog-${{ env.STAMP }}.tar.gz
+            blog-admin-${{ env.STAMP }}.tar.gz
+            BlogService/target/blog-service-${{ env.STAMP }}.jar
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Trust host key
+        run: |
+          HOST="${DEPLOY_HOST:-124.222.86.239}"
+          PORT="${DEPLOY_PORT:-22}"
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "$PORT" -H "$HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload artifacts
+        run: |
+          HOST="${DEPLOY_HOST:-124.222.86.239}"
+          PORT="${DEPLOY_PORT:-22}"
+          USER="${DEPLOY_USER:?请在仓库 Secrets 中设置 DEPLOY_USER}"
+          RSH="ssh -p ${PORT}"
+          ssh -p "$PORT" "${USER}@${HOST}" "mkdir -p ${JAR_DIR}/releases"
+          rsync -az --delete -e "$RSH" --exclude '.user.ini' --exclude '.htaccess' \
+            Blog/dist/ "${USER}@${HOST}:${FRONT_DIR}/"
+          rsync -az --delete -e "$RSH" --exclude '.user.ini' --exclude '.htaccess' \
+            BlogAdmin/dist/ "${USER}@${HOST}:${ADMIN_DIR}/"
+          scp -P "$PORT" \
+            "BlogService/target/blog-service-${STAMP}.jar" \
+            "blog-${STAMP}.tar.gz" \
+            "blog-admin-${STAMP}.tar.gz" \
+            "${USER}@${HOST}:${JAR_DIR}/"
+          scp -P "$PORT" deploy/start-backend.sh "${USER}@${HOST}:${JAR_DIR}/start.sh"
+          ssh -p "$PORT" "${USER}@${HOST}" bash -s <<EOF
+          set -euo pipefail
+          cd ${JAR_DIR}
+          mv "blog-${STAMP}.tar.gz" "blog-admin-${STAMP}.tar.gz" releases/
+          cp "blog-service-${STAMP}.jar" blog-service.jar
+          ls -1t releases/blog-[0-9]*.tar.gz 2>/dev/null | tail -n +6 | xargs -r rm -f || true
+          ls -1t releases/blog-admin-*.tar.gz 2>/dev/null | tail -n +6 | xargs -r rm -f || true
+          ls -1t blog-service-*.jar 2>/dev/null | tail -n +6 | xargs -r rm -f || true
+          EOF
+
+      - name: Restart backend
+        run: |
+          HOST="${DEPLOY_HOST:-124.222.86.239}"
+          PORT="${DEPLOY_PORT:-22}"
+          USER="${DEPLOY_USER:?请在仓库 Secrets 中设置 DEPLOY_USER}"
+          ssh -p "$PORT" "${USER}@${HOST}" \
+            "sed -i 's/\r\$//' ${JAR_DIR}/start.sh && chmod +x ${JAR_DIR}/start.sh && ${JAR_DIR}/start.sh"
