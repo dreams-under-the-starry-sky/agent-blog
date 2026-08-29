@@ -1,23 +1,18 @@
 # 推送到 GitHub 后自动部署
 
-`main` 有新推送时，GitHub Actions 会构建三端并发布到 `124.222.86.239`：
+`main` 有新推送时，GitHub Actions 会构建**前台 / 后台**并发布到 `124.222.86.239`。后端 jar **不**参与 CI，需在服务器上自行维护。
 
 | 产物 | 服务器目录 |
 |------|------------|
 | 前台 `Blog/dist` | `/www/wwwroot/agent-blog` |
 | 后台 `BlogAdmin/dist` | `/www/wwwroot/agent-blog-admin` |
-| `blog-service.jar`（当前运行副本） | `/www/wwwroot/springboot` |
 
 构建会打上上海时区时间戳 `YYYYMMDD-HHMMSS`：
 
-- 前台包 `blog-{时间戳}.tar.gz`、后台包 `blog-admin-{时间戳}.tar.gz` → `/www/wwwroot/springboot/releases/`（各保留最近 5 个）
-- 后端 `blog-service-{时间戳}.jar` → `/www/wwwroot/springboot/`（再复制一份为 `blog-service.jar` 供启动；带时间戳的 jar 保留最近 5 个）
-- CI 在 Ubuntu 上打包，jar 只含 Linux x64 的 FFmpeg 原生库（本机 Windows 打包仍只含 Windows 库）
-- 大 jar 用 rsync 单独上传，避免和前台小文件挤在一次 scp 里卡住
-- Actions 本次运行也可下载同名 artifact `agent-blog-{时间戳}`
+- 前台包 `blog-{时间戳}.tar.gz`、后台包 `blog-admin-{时间戳}.tar.gz` 作为 Actions artifact 可下载
 - 站点根目录有 `build-stamp.txt`，内容即本次时间戳
 
-后端在 `/www/wwwroot/springboot` 启动，读取**同目录** `application-local.yml`（CI **不会**上传或覆盖该文件）。端口 8080。
+后端仍在 `/www/wwwroot/springboot` 手动启动，读取同目录 `application-local.yml`。端口 8080。`deploy/start-backend.sh` 可拷到该目录当 `start.sh` 用。
 
 ## 1. 服务器一次性准备
 
@@ -89,15 +84,9 @@ ssh-copy-id -i deploy_key.pub root@124.222.86.239
 
 1. 把 `.github/workflows/deploy.yml`、`deploy/start-backend.sh` 提交并推到 `main`，或在 Actions 里手动 Run workflow。
 2. 打开仓库 **Actions**，等 Deploy 变绿。
-3. 服务器检查：
-   ```bash
-   ss -lntp | grep 8080
-   tail -n 50 /www/wwwroot/springboot/app.log
-   ```
-   日志里应出现 `Started BlogApplication`。
-4. 浏览器打开前台、`/blog-manager/`、接口 `/agent-blog/server/api/front/articles`。
+3. 浏览器打开前台、`/blog-manager/`。
 
-以后每次 `git push origin main` 都会再跑一遍：构建（产物带时间戳）→ 同步静态文件 → 覆盖 jar（不碰 yml）→ 重启 Java。
+以后每次 `git push origin main` 都会再跑一遍：构建前台/后台 → 同步静态文件。后端 jar 需自行更新。
 
 ## 5. 失败时
 
@@ -105,5 +94,3 @@ ssh-copy-id -i deploy_key.pub root@124.222.86.239
 - **SSH 卡住很久**：密钥未被接受时会在服务器上等密码；workflow 已设 `BatchMode`，会在约 20 秒内失败而不是挂死。
 - **Host key verification**：一般由 workflow 里 `ssh-keyscan` 处理；若 IP 变了，重跑即可。
 - **rsync: command not found**：服务器未装 rsync。
-- **缺少 application-local.yml**：文件不在 `/www/wwwroot/springboot/`。
-- **端口仍被占用**：`fuser -k 8080/tcp` 后再执行 `/www/wwwroot/springboot/start.sh`。
