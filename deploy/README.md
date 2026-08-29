@@ -99,7 +99,8 @@ ssh-copy-id -i deploy_key.pub root@124.222.86.239
 
 ## 5. 失败时
 
-- **Permission denied**：公钥没进 `authorized_keys`，或 `DEPLOY_USER` 不对。
+- **Permission denied**：公钥没进 `authorized_keys`，或 `DEPLOY_USER` 不对。`DEPLOY_SSH_KEY` 必须是私钥全文（含 `BEGIN` / `END`），不要填 `.pub`。
+- **SSH 卡住很久**：密钥未被接受时会在服务器上等密码；workflow 已设 `BatchMode`，会在约 20 秒内失败而不是挂死。
 - **Host key verification**：一般由 workflow 里 `ssh-keyscan` 处理；若 IP 变了，重跑即可。
 - **rsync: command not found**：服务器未装 rsync。
 - **缺少 application-local.yml**：文件不在 `/www/wwwroot/springboot/`。

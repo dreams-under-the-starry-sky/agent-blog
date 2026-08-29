@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: deploy-production
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -86,19 +86,20 @@ jobs:
           HOST="${DEPLOY_HOST:-124.222.86.239}"
           PORT="${DEPLOY_PORT:-22}"
           USER="${DEPLOY_USER:?请在仓库 Secrets 中设置 DEPLOY_USER}"
-          RSH="ssh -p ${PORT}"
-          ssh -p "$PORT" "${USER}@${HOST}" "mkdir -p ${JAR_DIR}/releases"
-          rsync -az --delete -e "$RSH" --exclude '.user.ini' --exclude '.htaccess' \
+          SSH="ssh -p ${PORT} -o BatchMode=yes -o ConnectTimeout=20"
+          SCP="scp -P ${PORT} -o BatchMode=yes -o ConnectTimeout=20"
+          $SSH "${USER}@${HOST}" "mkdir -p ${JAR_DIR}/releases"
+          rsync -az --delete -e "$SSH" --exclude '.user.ini' --exclude '.htaccess' \
             Blog/dist/ "${USER}@${HOST}:${FRONT_DIR}/"
-          rsync -az --delete -e "$RSH" --exclude '.user.ini' --exclude '.htaccess' \
+          rsync -az --delete -e "$SSH" --exclude '.user.ini' --exclude '.htaccess' \
             BlogAdmin/dist/ "${USER}@${HOST}:${ADMIN_DIR}/"
-          scp -P "$PORT" \
+          $SCP \
             "BlogService/target/blog-service-${STAMP}.jar" \
             "blog-${STAMP}.tar.gz" \
             "blog-admin-${STAMP}.tar.gz" \
             "${USER}@${HOST}:${JAR_DIR}/"
-          scp -P "$PORT" deploy/start-backend.sh "${USER}@${HOST}:${JAR_DIR}/start.sh"
-          ssh -p "$PORT" "${USER}@${HOST}" bash -s <<EOF
+          $SCP deploy/start-backend.sh "${USER}@${HOST}:${JAR_DIR}/start.sh"
+          $SSH "${USER}@${HOST}" bash -s <<EOF
           set -euo pipefail
           cd ${JAR_DIR}
           mv "blog-${STAMP}.tar.gz" "blog-admin-${STAMP}.tar.gz" releases/
@@ -113,5 +114,6 @@ jobs:
           HOST="${DEPLOY_HOST:-124.222.86.239}"
           PORT="${DEPLOY_PORT:-22}"
           USER="${DEPLOY_USER:?请在仓库 Secrets 中设置 DEPLOY_USER}"
-          ssh -p "$PORT" "${USER}@${HOST}" \
+          ssh -p "$PORT" -o BatchMode=yes -o ConnectTimeout=20 \
+            "${USER}@${HOST}" \
             "sed -i 's/\r\$//' ${JAR_DIR}/start.sh && chmod +x ${JAR_DIR}/start.sh && ${JAR_DIR}/start.sh"
