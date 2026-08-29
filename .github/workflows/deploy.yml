@@ -81,28 +81,34 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -p "$PORT" -H "$HOST" >> ~/.ssh/known_hosts
 
-      - name: Upload artifacts
+      - name: Upload sites
         run: |
           HOST="${DEPLOY_HOST:-124.222.86.239}"
           PORT="${DEPLOY_PORT:-22}"
           USER="${DEPLOY_USER:?请在仓库 Secrets 中设置 DEPLOY_USER}"
-          SSH="ssh -p ${PORT} -o BatchMode=yes -o ConnectTimeout=20"
-          SCP="scp -P ${PORT} -o BatchMode=yes -o ConnectTimeout=20"
-          $SSH "${USER}@${HOST}" "mkdir -p ${JAR_DIR}/releases"
+          SSH="ssh -p ${PORT} -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=40"
           rsync -az --delete -e "$SSH" --exclude '.user.ini' --exclude '.htaccess' \
             Blog/dist/ "${USER}@${HOST}:${FRONT_DIR}/"
           rsync -az --delete -e "$SSH" --exclude '.user.ini' --exclude '.htaccess' \
             BlogAdmin/dist/ "${USER}@${HOST}:${ADMIN_DIR}/"
-          $SCP \
+
+      - name: Upload backend jar
+        run: |
+          HOST="${DEPLOY_HOST:-124.222.86.239}"
+          PORT="${DEPLOY_PORT:-22}"
+          USER="${DEPLOY_USER:?请在仓库 Secrets 中设置 DEPLOY_USER}"
+          SSH="ssh -p ${PORT} -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=40"
+          $SSH "${USER}@${HOST}" "mkdir -p ${JAR_DIR}/releases"
+          rsync -a --info=progress2 --partial --inplace --timeout=300 -e "$SSH" \
             "BlogService/target/blog-service-${STAMP}.jar" \
-            "blog-${STAMP}.tar.gz" \
-            "blog-admin-${STAMP}.tar.gz" \
-            "${USER}@${HOST}:${JAR_DIR}/"
-          $SCP deploy/start-backend.sh "${USER}@${HOST}:${JAR_DIR}/start.sh"
+            "${USER}@${HOST}:${JAR_DIR}/blog-service-${STAMP}.jar"
+          rsync -a -e "$SSH" \
+            "blog-${STAMP}.tar.gz" "blog-admin-${STAMP}.tar.gz" \
+            "${USER}@${HOST}:${JAR_DIR}/releases/"
+          rsync -a -e "$SSH" deploy/start-backend.sh "${USER}@${HOST}:${JAR_DIR}/start.sh"
           $SSH "${USER}@${HOST}" bash -s <<EOF
           set -euo pipefail
           cd ${JAR_DIR}
-          mv "blog-${STAMP}.tar.gz" "blog-admin-${STAMP}.tar.gz" releases/
           cp "blog-service-${STAMP}.jar" blog-service.jar
           ls -1t releases/blog-[0-9]*.tar.gz 2>/dev/null | tail -n +6 | xargs -r rm -f || true
           ls -1t releases/blog-admin-*.tar.gz 2>/dev/null | tail -n +6 | xargs -r rm -f || true
@@ -115,5 +121,6 @@ jobs:
           PORT="${DEPLOY_PORT:-22}"
           USER="${DEPLOY_USER:?请在仓库 Secrets 中设置 DEPLOY_USER}"
           ssh -p "$PORT" -o BatchMode=yes -o ConnectTimeout=20 \
+            -o ServerAliveInterval=15 -o ServerAliveCountMax=40 \
             "${USER}@${HOST}" \
             "sed -i 's/\r\$//' ${JAR_DIR}/start.sh && chmod +x ${JAR_DIR}/start.sh && ${JAR_DIR}/start.sh"

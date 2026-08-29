@@ -12,6 +12,8 @@
 
 - 前台包 `blog-{时间戳}.tar.gz`、后台包 `blog-admin-{时间戳}.tar.gz` → `/www/wwwroot/springboot/releases/`（各保留最近 5 个）
 - 后端 `blog-service-{时间戳}.jar` → `/www/wwwroot/springboot/`（再复制一份为 `blog-service.jar` 供启动；带时间戳的 jar 保留最近 5 个）
+- CI 在 Ubuntu 上打包，jar 只含 Linux x64 的 FFmpeg 原生库（本机 Windows 打包仍只含 Windows 库）
+- 大 jar 用 rsync 单独上传，避免和前台小文件挤在一次 scp 里卡住
 - Actions 本次运行也可下载同名 artifact `agent-blog-{时间戳}`
 - 站点根目录有 `build-stamp.txt`，内容即本次时间戳
 
