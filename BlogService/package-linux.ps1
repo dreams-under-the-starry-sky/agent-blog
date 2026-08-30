@@ -13,8 +13,15 @@ Write-Host "JAVA_HOME=$env:JAVA_HOME"
 Write-Host "Packaging Linux x86_64 jar (natives-linux, skip tests) stamp=$stamp"
 
 # Windows 会自动激活 natives-windows，必须关掉，否则 FFmpeg 在 Linux 上起不来。
-& $mvn -s $settings -B -DskipTests package "-P-natives-windows,natives-linux"
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+# 必须 Start-Process -Wait：PowerShell 的 & / LASTEXITCODE 在钩子里不可靠。
+$line = "/c `"$mvn`" -s `"$settings`" -B -DskipTests package -P-natives-windows,natives-linux"
+Write-Host $line
+$p = Start-Process -FilePath 'cmd.exe' -ArgumentList $line -Wait -NoNewWindow -PassThru
+if ($null -eq $p -or $p.ExitCode -ne 0) {
+    $code = if ($null -eq $p) { 1 } else { $p.ExitCode }
+    Write-Error "Maven package failed (exit $code)"
+    exit $code
+}
 
 $built = Join-Path $root "target\blog-service.jar"
 if (-not (Test-Path $built)) {
