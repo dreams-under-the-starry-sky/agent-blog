@@ -2,13 +2,35 @@ import hljs from 'highlight.js/lib/common'
 import { Marked } from 'marked'
 import { markedHighlight } from 'marked-highlight'
 
+hljs.registerLanguage('vue', () => ({
+  name: 'Vue',
+  aliases: ['vuejs', 'htmlvue'],
+  subLanguage: 'xml',
+  contains: [
+    {
+      begin: /<script\b[^>]*>/i,
+      end: /<\/script>/i,
+      subLanguage: 'javascript',
+      excludeBegin: true,
+      excludeEnd: true,
+    },
+    {
+      begin: /<style\b[^>]*>/i,
+      end: /<\/style>/i,
+      subLanguage: 'css',
+      excludeBegin: true,
+      excludeEnd: true,
+    },
+  ],
+}))
+
 const parser = new Marked(
   markedHighlight({
     emptyLangClass: 'hljs',
     langPrefix: 'hljs language-',
     highlight(code, lang) {
-      const language = lang && hljs.getLanguage(lang) ? lang : 'plaintext'
-      return hljs.highlight(code, { language }).value
+      const name = lang && hljs.getLanguage(lang) ? lang : 'plaintext'
+      return hljs.highlight(code, { language: name }).value
     },
   }),
 )

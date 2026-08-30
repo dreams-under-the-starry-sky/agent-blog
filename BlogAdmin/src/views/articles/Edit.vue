@@ -10,9 +10,12 @@ import ZoomIn from '@vicons/tabler/es/ZoomIn'
 import { adminApi } from '@/api/admin'
 import { upload, deleteUpload } from '@/api/http'
 import { mediaUrl } from '@/utils/format'
+import { useThemeStore } from '@/stores/theme'
 
 const route = useRoute()
 const router = useRouter()
+const theme = useThemeStore()
+const editorTheme = computed(() => (theme.dark ? 'dark' : 'light'))
 const categories = ref<any[]>([])
 const tags = ref<any[]>([])
 const previewCover = ref(false)
@@ -178,7 +181,14 @@ onMounted(async () => {
         </div>
       </el-form-item>
       <el-form-item label="正文">
-        <MdEditor v-model="form.content" :onUploadImg="onUploadImg" :codeFoldable="false" style="height: 520px" />
+        <MdEditor
+          :key="editorTheme"
+          v-model="form.content"
+          :theme="editorTheme"
+          :onUploadImg="onUploadImg"
+          :codeFoldable="false"
+          style="height: 520px"
+        />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="save">保存</el-button>

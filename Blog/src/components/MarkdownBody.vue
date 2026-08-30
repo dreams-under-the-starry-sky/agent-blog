@@ -13,39 +13,81 @@ function clearCopyTimers() {
   }
 }
 
+function langOf(pre: HTMLElement) {
+  const code = pre.querySelector('code')
+  const match = (code?.className || '').match(/language-([\w+-]+)/)
+  const lang = match?.[1] || ''
+  return !lang || lang === 'plaintext' ? '' : lang
+}
+
 function enhance() {
   const el = root.value
   if (!el) return
-  const copySvg = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>'
-  const checkSvg = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>'
   el.querySelectorAll('pre').forEach((pre) => {
-    if (pre.parentElement?.classList.contains('code-block')) return
+    if (pre.parentElement?.closest('.code-block')) return
+    const source = pre.innerText.replace(/\n$/, '')
+    const lineCount = source ? source.split('\n').length : 1
+
     const wrap = document.createElement('div')
     wrap.className = 'code-block'
-    const btn = document.createElement('button')
-    btn.type = 'button'
-    btn.className = 'copy-btn'
-    btn.title = '复制'
-    btn.innerHTML = copySvg
-    btn.addEventListener('click', async (event) => {
+    const head = document.createElement('div')
+    head.className = 'code-head'
+    head.title = '折叠'
+    head.innerHTML = '<span class="code-dots" aria-hidden="true"><i></i><i></i><i></i></span>'
+
+    const actions = document.createElement('div')
+    actions.className = 'code-actions'
+    const lang = langOf(pre)
+    if (lang) {
+      const langEl = document.createElement('span')
+      langEl.className = 'code-lang'
+      langEl.textContent = lang
+      actions.appendChild(langEl)
+    }
+    const copyBtn = document.createElement('button')
+    copyBtn.type = 'button'
+    copyBtn.className = 'copy-btn'
+    copyBtn.textContent = '复制代码'
+    copyBtn.addEventListener('click', async (event) => {
       event.preventDefault()
       event.stopPropagation()
       try {
-        await navigator.clipboard.writeText(pre.innerText)
-        btn.innerHTML = checkSvg
-        btn.classList.add('copied')
+        await navigator.clipboard.writeText(source)
+        copyBtn.textContent = '已复制'
+        copyBtn.classList.add('copied')
         ElMessage.success('已复制')
         copyTimers.push(window.setTimeout(() => {
-          btn.innerHTML = copySvg
-          btn.classList.remove('copied')
+          copyBtn.textContent = '复制代码'
+          copyBtn.classList.remove('copied')
         }, 1200))
       } catch {
         ElMessage.error('复制失败')
       }
     })
+    const foldHint = document.createElement('span')
+    foldHint.className = 'fold-btn'
+    foldHint.setAttribute('aria-hidden', 'true')
+    foldHint.innerHTML = '<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>'
+    actions.appendChild(copyBtn)
+    actions.appendChild(foldHint)
+    head.appendChild(actions)
+    head.addEventListener('click', () => {
+      const folded = wrap.classList.toggle('is-folded')
+      head.title = folded ? '展开' : '折叠'
+    })
+
+    const body = document.createElement('div')
+    body.className = 'code-body'
+    const gutter = document.createElement('div')
+    gutter.className = 'code-gutter'
+    gutter.setAttribute('aria-hidden', 'true')
+    gutter.textContent = Array.from({ length: lineCount }, (_, i) => String(i + 1)).join('\n')
+    body.appendChild(gutter)
+
     pre.parentNode?.insertBefore(wrap, pre)
-    wrap.appendChild(btn)
-    wrap.appendChild(pre)
+    wrap.appendChild(head)
+    wrap.appendChild(body)
+    body.appendChild(pre)
   })
   el.querySelectorAll('table').forEach((table) => {
     if (table.parentElement?.classList.contains('table-wrap')) return

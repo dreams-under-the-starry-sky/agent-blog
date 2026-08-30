@@ -88,6 +88,15 @@ ssh-copy-id -i deploy_key.pub root@124.222.86.239
 
 以后每次 `git push origin main` 都会再跑一遍：构建前台/后台 → 同步静态文件。后端 jar 需自行更新。
 
+## 本地打 Linux 后端 jar
+
+Windows 本机在提交 `BlogService/` 后执行 `BlogService/package-linux.ps1`（也可装 `.githooks/post-commit`），产物：
+
+- `BlogService/release/blog-service-linux.jar`（始终覆盖为最新）
+- `BlogService/release/blog-service-linux-{YYYYMMDD-HHMMSS}.jar`
+
+拷到服务器 `/www/wwwroot/springboot/` 即可。本步骤只在本地做，不要写进 GitHub `deploy.yml`。
+
 ## 5. 失败时
 
 - **Permission denied**：公钥没进 `authorized_keys`，或 `DEPLOY_USER` 不对。`DEPLOY_SSH_KEY` 必须是私钥全文（含 `BEGIN` / `END`），不要填 `.pub`。

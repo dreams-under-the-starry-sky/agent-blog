@@ -74,7 +74,7 @@ function sameColor(a: string, b: string) {
 }
 
 export const useThemeStore = defineStore('theme', () => {
-  const dark = ref(localStorage.getItem(DARK_KEY) === '1')
+  const dark = ref(localStorage.getItem(DARK_KEY) !== '0')
   const color = ref(localStorage.getItem(COLOR_KEY) || DEFAULT_COLOR)
   const hue = ref(0)
 

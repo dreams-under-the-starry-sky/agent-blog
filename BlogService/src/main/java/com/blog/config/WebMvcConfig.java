@@ -8,9 +8,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.http.MediaType;
 import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import jakarta.annotation.Resource;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -21,8 +23,16 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Value("${blog.upload.dir:uploads}")
     private String uploadDir;
 
-    @Value("${blog.cors.origins:http://localhost:[*],http://127.0.0.1:[*]}")
+    @Value("${blog.cors.origins}")
     private String originConfig;
+
+    @Resource
+    private FrontApiRateLimitInterceptor frontApiRateLimitInterceptor;
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(frontApiRateLimitInterceptor).addPathPatterns("/api/front/**");
+    }
 
     @Override
     public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {

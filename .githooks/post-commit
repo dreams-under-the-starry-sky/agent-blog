@@ -1,0 +1,11 @@
+#!/bin/sh
+# 本地提交后打 Linux jar，不要写进 GitHub Actions。
+repo=$(git rev-parse --show-toplevel) || exit 0
+cd "$repo" || exit 0
+
+changed=$(git diff-tree --no-commit-id --name-only -r HEAD)
+echo "$changed" | grep -q '^BlogService/' || exit 0
+
+win_repo=$(cygpath -w "$repo" 2>/dev/null || echo "$repo")
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$win_repo\\BlogService\\package-linux.ps1"
+exit $?

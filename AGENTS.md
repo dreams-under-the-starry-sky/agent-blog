@@ -38,6 +38,8 @@ commit 信息按实际涉及的类型分行写（中文全角冒号），不涉�
 - refactor：MiscService 拆成独立 Service
 ```
 
+用户要求 commit 且提交成功后：若本次包含 `BlogService/` 下文件，立刻执行 `BlogService/package-linux.ps1`，打出 Linux x86_64 可运行的 `blog-service` jar（关掉 `natives-windows`、启用 `natives-linux`）。产物在 `BlogService/release/`（`blog-service-linux.jar` 为最新一份，另有带上海时区时间戳的一份）。jar 不要提交。**不要**把该步骤加进 `.github/workflows/deploy.yml` 或任何 GitHub Actions。若 git `post-commit` 钩子已经为同一次提交打出 jar，不必再打一遍。
+
 ## 启动
 
 - `JAVA_HOME=E:\environment\Java\JDK\jdk21`（系统默认可能是 JDK 8）。
