@@ -90,7 +90,7 @@ ssh-copy-id -i deploy_key.pub root@124.222.86.239
 
 ## 本地打 Linux 后端 jar
 
-Windows 本机在提交 `BlogService/` 后执行 `BlogService/package-linux.ps1`（也可装 `.githooks/post-commit`），产物：
+Windows 本机在提交 `BlogService/` 后执行 `BlogService/package-linux.cmd`（也可装 `.githooks/post-commit`），产物：
 
 - `BlogService/release/blog-service-linux.jar`（始终覆盖为最新）
 - `BlogService/release/blog-service-linux-{YYYYMMDD-HHMMSS}.jar`

@@ -7,5 +7,5 @@ changed=$(git diff-tree --no-commit-id --name-only -r HEAD)
 echo "$changed" | grep -q '^BlogService/' || exit 0
 
 win_repo=$(cygpath -w "$repo" 2>/dev/null || echo "$repo")
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$win_repo\\BlogService\\package-linux.ps1"
+cmd.exe /c "$win_repo\\BlogService\\package-linux.cmd"
 exit $?
